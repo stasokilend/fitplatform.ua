@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await apiRequest('profile.php', 'POST', data);
             if (result.success) {
                 showToast('Профіль успішно збережено!', 'success');
-                setTimeout(() => window.location.href = '/dashboard.php', 1000);
+                setTimeout(() => window.location.href = appUrl('dashboard.php'), 1000);
             } else {
                 enableButton(btn);
                 errorDiv.classList.remove('d-none');

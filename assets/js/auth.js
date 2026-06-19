@@ -193,30 +193,49 @@ function validateField(input) {
 // Индикатор силы пароля
 function updatePasswordStrength(password) {
     const strengthBar = document.getElementById('passwordStrength');
+    const strengthText = document.getElementById('strengthText');
     if (!strengthBar) return;
     
     let strength = 0;
-    if (password.length >= 6) strength++;
-    if (password.match(/[a-z]/)) strength++;
-    if (password.match(/[A-Z]/)) strength++;
-    if (password.match(/[0-9]/)) strength++;
-    if (password.match(/[^a-zA-Z0-9]/)) strength++;
+    let messages = [];
+    
+    if (password.length >= 6) { strength++; } else { messages.push('Мінімум 6 символів'); }
+    if (password.match(/[a-z]/)) { strength++; } else { messages.push('Маленька літера'); }
+    if (password.match(/[A-Z]/)) { strength++; } else { messages.push('Велика літера'); }
+    if (password.match(/[0-9]/)) { strength++; } else { messages.push('Цифра'); }
+    if (password.match(/[^a-zA-Z0-9]/)) { strength++; } else { messages.push('Спецсимвол'); }
     
     const width = (strength / 5) * 100;
     strengthBar.style.width = width + '%';
     
+    if (password.length === 0) {
+        strengthBar.style.width = '0%';
+        strengthBar.className = 'progress-bar';
+        if (strengthText) strengthText.textContent = 'Введіть пароль для оцінки надійності';
+        return;
+    }
+    
+    let label, className;
     if (strength <= 2) {
-        strengthBar.className = 'progress-bar bg-danger';
-        strengthBar.textContent = 'Слабкий';
+        label = 'Слабкий';
+        className = 'bg-danger';
     } else if (strength <= 3) {
-        strengthBar.className = 'progress-bar bg-warning';
-        strengthBar.textContent = 'Середній';
+        label = 'Середній';
+        className = 'bg-warning';
     } else if (strength <= 4) {
-        strengthBar.className = 'progress-bar bg-info';
-        strengthBar.textContent = 'Хороший';
+        label = 'Хороший';
+        className = 'bg-info';
     } else {
-        strengthBar.className = 'progress-bar bg-success';
-        strengthBar.textContent = 'Сильний';
+        label = 'Сильний 🎉';
+        className = 'bg-success';
+    }
+    
+    strengthBar.className = 'progress-bar ' + className;
+    
+    if (strengthText) {
+        const msg = messages.length > 0 ? ' (' + messages.join(', ') + ')' : '';
+        strengthText.textContent = 'Надійність: ' + label + msg;
+        strengthText.className = strength <= 2 ? 'text-danger' : (strength <= 3 ? 'text-warning' : 'text-success');
     }
 }
 

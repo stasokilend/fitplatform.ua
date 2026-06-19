@@ -1,5 +1,11 @@
 <?php 
 require_once 'includes/session.php';
+
+if (isLoggedIn()) {
+    header('Location: /dashboard.php');
+    exit;
+}
+
 $pageTitle = 'Реєстрація';
 ob_start();
 ?>
@@ -7,44 +13,83 @@ ob_start();
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-5">
-            <div class="card shadow">
-                <div class="card-body p-4">
-                    <h3 class="text-center mb-4">
-                        <i class="bi bi-person-plus text-primary"></i> Реєстрація
-                    </h3>
+            <div class="auth-card">
+                <div class="text-center mb-4">
+                    <div class="bg-gradient-primary rounded-circle d-inline-flex p-3 mb-3" style="width: 64px; height: 64px; align-items: center; justify-content: center;">
+                        <i class="bi bi-person-plus text-white" style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="card-title">Приєднуйтесь!</h3>
+                    <p class="text-muted">Створіть акаунт і почніть тренуватися</p>
+                </div>
+                
+                <form id="registerForm" action="/controllers/AuthController.php" method="POST">
+                    <input type="hidden" name="action" value="register">
                     
-                    <form action="/controllers/AuthController.php" method="POST">
-                        <input type="hidden" name="action" value="register">
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Повне ім'я</label>
-                            <input type="text" name="full_name" class="form-control" 
+                    <div class="mb-3">
+                        <label for="fullName" class="form-label fw-semibold">Повне ім'я</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="bi bi-person text-muted"></i>
+                            </span>
+                            <input type="text" id="fullName" name="full_name" class="form-control border-start-0" 
                                    placeholder="Іван Петренко" required>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Email</label>
-                            <input type="email" name="email" class="form-control" 
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-semibold">Email</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="bi bi-envelope text-muted"></i>
+                            </span>
+                            <input type="email" id="email" name="email" class="form-control border-start-0" 
                                    placeholder="ivan@example.com" required>
                         </div>
-                        
-                        <div class="mb-3">
-                            <label class="form-label">Пароль</label>
-                            <input type="password" name="password" class="form-control" 
-                                   placeholder="Мінімум 6 символів" minlength="6" required>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="bi bi-person-plus"></i> Зареєструватися
-                        </button>
-                    </form>
-                    
-                    <div class="text-center mt-3">
-                        <small>
-                            Вже маєте акаунт? 
-                            <a href="/login.php" class="text-decoration-none">Увійти</a>
-                        </small>
                     </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label fw-semibold">Пароль</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="bi bi-key text-muted"></i>
+                            </span>
+                            <input type="password" id="password" name="password" class="form-control border-start-0" 
+                                   placeholder="Мінімум 6 символів" minlength="6" required>
+                            <button class="btn btn-outline-secondary toggle-password border-start-0" type="button">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="mt-2">
+                            <div class="progress" style="height: 4px;">
+                                <div id="passwordStrength" class="progress-bar" style="width: 0%; transition: var(--transition);"></div>
+                            </div>
+                            <small class="text-muted" id="strengthText">Введіть пароль для оцінки надійності</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="confirmPassword" class="form-label fw-semibold">Підтвердіть пароль</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0">
+                                <i class="bi bi-check-circle text-muted"></i>
+                            </span>
+                            <input type="password" id="confirmPassword" name="confirm_password" class="form-control border-start-0" 
+                                   placeholder="Повторіть пароль" required>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 btn-gradient py-3">
+                        <i class="bi bi-person-plus me-2"></i> Зареєструватися
+                    </button>
+                </form>
+                
+                <div class="text-center mt-4">
+                    <p class="text-muted small">
+                        Вже маєте акаунт? 
+                        <a href="/login.php" class="text-decoration-none fw-semibold" style="color: var(--primary);">
+                            Увійти <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </p>
                 </div>
             </div>
         </div>

@@ -4,18 +4,27 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../classes/Database.php';
+require_once __DIR__ . '/session-helpers.php';
 
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'error' => 'Необхідно авторизуватися']);
-    exit;
-}
-
-$data = json_decode(file_get_contents('php://input'), true);
+$userId = requireJsonAuth();
+$data = getJsonInput();
 $planId = $data['plan_id'] ?? null;
 
 $db = Database::getInstance();
-$userId = $_SESSION['user_id'];
+
+if ($planId !== null) {
+    $planId = filter_var($planId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if (!$planId) {
+        echo json_encode(['success' => false, 'error' => 'Некоректний ID плану']);
+        exit;
+    }
+
+    $plan = $db->fetchOne('SELECT id FROM workout_plans WHERE id = ? AND user_id = ?', [$planId, $userId]);
+    if (!$plan) {
+        echo json_encode(['success' => false, 'error' => 'План не знайдено']);
+        exit;
+    }
+}
 
 // Створення сесії
 $sessionId = $db->insert('training_sessions', [

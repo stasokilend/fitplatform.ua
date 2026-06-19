@@ -5,7 +5,14 @@ const API_BASE = '/api/';
 // === TOAST СИСТЕМА ===
 function showToast(message, type = 'info', duration = 4000) {
     const container = document.getElementById('toastContainer');
-    if (!container) return;
+    if (!container) {
+        // Якщо контейнера немає – створюємо його
+        const newContainer = document.createElement('div');
+        newContainer.id = 'toastContainer';
+        newContainer.className = 'toast-container';
+        document.body.prepend(newContainer);
+        return showToast(message, type, duration);
+    }
 
     const icons = {
         success: 'fa-check-circle',
@@ -23,52 +30,70 @@ function showToast(message, type = 'info', duration = 4000) {
     `;
 
     container.appendChild(toast);
-
-    // Показати з анімацією
     setTimeout(() => toast.classList.add('show'), 10);
 
-    // Закриття по кнопці
     toast.querySelector('.toast-close').addEventListener('click', () => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
     });
 
-    // Автоматичне зникнення
     setTimeout(() => {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
     }, duration);
 }
 
+// === БЛОКУВАННЯ КНОПОК ===
+function disableButton(btn, loadingText = 'Завантаження...') {
+    btn.disabled = true;
+    btn._originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i>${loadingText}`;
+}
+
+function enableButton(btn) {
+    btn.disabled = false;
+    if (btn._originalText) {
+        btn.innerHTML = btn._originalText;
+    }
+}
+
 // === ПЕРЕВІРКА АВТОРИЗАЦІЇ ===
 function checkAuth() {
-    fetch(API_BASE + 'profile.php')
+    return fetch(API_BASE + 'profile.php')
         .then(res => res.json())
         .then(data => {
             if (!data.success) {
                 window.location.href = 'login.html';
-            } else {
-                // Якщо профіль не заповнений (немає ваги, віку тощо) – редірект на налаштування
-                const profile = data.profile;
-                if (!profile || !profile.weight || !profile.age) {
-                    window.location.href = 'profile-setup.html';
-                }
+                return null;
             }
+            return data.profile;
         })
         .catch(() => {
             window.location.href = 'login.html';
+            return null;
         });
 }
 
+// === ПЕРЕВІРКА АВТОРИЗАЦІЇ (без редіректу) ===
+function checkAuthSilent() {
+    return fetch(API_BASE + 'profile.php')
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) return null;
+            return data.profile;
+        })
+        .catch(() => null);
+}
+
 // === ВИХІД ===
-function logout() {
+function logout(redirectUrl = 'login.html') {
     fetch(API_BASE + 'logout.php', { method: 'POST' })
         .then(() => {
             showToast('Ви вийшли з аккаунту', 'info');
-            setTimeout(() => window.location.href = 'login.html', 500);
+            setTimeout(() => window.location.href = redirectUrl, 500);
         })
         .catch(() => {
-            window.location.href = 'login.html';
+            window.location.href = redirectUrl;
         });
 }
 

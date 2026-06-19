@@ -10,24 +10,22 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadStats() {
     const result = await apiRequest('get-stats.php', 'GET');
     if (!result.success) {
-        alert('Помилка завантаження статистики');
+        showToast('Помилка завантаження статистики', 'error');
         return;
     }
 
     const stats = result.stats;
-    const total = stats.total;
+    const total = stats.total || {};
 
-    // Загальна статистика
     document.getElementById('totalSessions').textContent = total.total_sessions || 0;
     document.getElementById('totalMinutes').textContent = total.total_minutes || 0;
     document.getElementById('avgHeartRate').textContent = Math.round(total.avg_hr || 0);
     document.getElementById('totalCalories').textContent = Math.round(total.total_calories || 0);
 
-    // Історія
     const recent = stats.recent || [];
     const historyBody = document.getElementById('historyBody');
     if (recent.length === 0) {
-        historyBody.innerHTML = '<tr><td colspan="4" class="text-center">Немає даних</td></tr>';
+        historyBody.innerHTML = '<tr><td colspan="4" class="text-center">Немає даних. Почніть тренування!</td></tr>';
     } else {
         historyBody.innerHTML = recent.map(s => `
             <tr>
@@ -39,16 +37,18 @@ async function loadStats() {
         `).join('');
     }
 
-    // Графіки (останні 7)
     const labels = recent.map(s => new Date(s.started_at).toLocaleDateString('uk-UA')).reverse();
     const durations = recent.map(s => s.duration_minutes || 0).reverse();
     const calories = recent.map(s => Math.round(s.calories_burned || 0)).reverse();
 
-    createCharts(labels, durations, calories);
+    if (labels.length > 0) {
+        createCharts(labels, durations, calories);
+    } else {
+        showToast('Немає даних для графіків. Виконайте тренування!', 'info', 3000);
+    }
 }
 
 function createCharts(labels, durations, calories) {
-    // Графік тривалості
     const ctx1 = document.getElementById('durationChart').getContext('2d');
     if (durationChart) durationChart.destroy();
     durationChart = new Chart(ctx1, {
@@ -69,7 +69,6 @@ function createCharts(labels, durations, calories) {
         }
     });
 
-    // Графік калорій
     const ctx2 = document.getElementById('caloriesChart').getContext('2d');
     if (caloriesChart) caloriesChart.destroy();
     caloriesChart = new Chart(ctx2, {

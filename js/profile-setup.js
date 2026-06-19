@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
+        const btn = this.querySelector('button[type="submit"]');
 
         const age = parseInt(document.getElementById('setupAge').value);
         const weight = parseFloat(document.getElementById('setupWeight').value);
@@ -19,13 +20,34 @@ document.addEventListener('DOMContentLoaded', function() {
         let muscle = parseFloat(document.getElementById('setupGoalMuscle').value) || 0;
         let endurance = parseFloat(document.getElementById('setupGoalEndurance').value) || 0;
         const sum = lose + muscle + endurance;
+        
         if (sum === 0) {
             errorDiv.classList.remove('d-none');
             errorDiv.textContent = 'Сума пріоритетів не може дорівнювати 0.';
             showToast('Сума пріоритетів не може дорівнювати 0.', 'error');
             return;
         }
-        // Нормалізація
+        
+        // Перевірка валідності
+        if (!age || age < 10 || age > 100) {
+            errorDiv.classList.remove('d-none');
+            errorDiv.textContent = 'Введіть коректний вік (10-100 років)';
+            showToast('Введіть коректний вік (10-100 років)', 'error');
+            return;
+        }
+        if (!weight || weight < 20 || weight > 300) {
+            errorDiv.classList.remove('d-none');
+            errorDiv.textContent = 'Введіть коректну вагу (20-300 кг)';
+            showToast('Введіть коректну вагу (20-300 кг)', 'error');
+            return;
+        }
+        if (!height || height < 50 || height > 300) {
+            errorDiv.classList.remove('d-none');
+            errorDiv.textContent = 'Введіть коректний зріст (50-300 см)';
+            showToast('Введіть коректний зріст (50-300 см)', 'error');
+            return;
+        }
+
         const goals = {
             lose_weight: lose / sum,
             gain_muscle: muscle / sum,
@@ -44,17 +66,22 @@ document.addEventListener('DOMContentLoaded', function() {
             medical_restrictions: restrictions
         };
 
+        errorDiv.classList.add('d-none');
+        disableButton(btn, 'Збереження...');
+
         try {
             const result = await apiRequest('profile.php', 'POST', data);
             if (result.success) {
                 showToast('Профіль успішно збережено!', 'success');
                 setTimeout(() => window.location.href = 'dashboard.html', 1000);
             } else {
+                enableButton(btn);
                 errorDiv.classList.remove('d-none');
                 errorDiv.textContent = result.error || 'Помилка збереження';
                 showToast(result.error || 'Помилка збереження', 'error');
             }
         } catch (e) {
+            enableButton(btn);
             errorDiv.classList.remove('d-none');
             errorDiv.textContent = 'Помилка з\'єднання з сервером';
             showToast('Помилка з\'єднання з сервером', 'error');
@@ -72,7 +99,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('setupLevel').value = p.fitness_level || 1;
 
             if (p.goals) {
-                // Округлюємо до 2 знаків, щоб уникнути довгих дробів
                 document.getElementById('setupGoalLose').value = parseFloat(p.goals.lose_weight || 0.33).toFixed(2);
                 document.getElementById('setupGoalMuscle').value = parseFloat(p.goals.gain_muscle || 0.33).toFixed(2);
                 document.getElementById('setupGoalEndurance').value = parseFloat(p.goals.endurance || 0.34).toFixed(2);

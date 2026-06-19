@@ -1,11 +1,28 @@
 // js/auth.js
 
 document.addEventListener('DOMContentLoaded', function() {
+    const currentPage = window.location.pathname.split('/').pop();
+
+    // === ЯКЩО ВЖЕ АВТОРИЗОВАНИЙ – НЕ ПОКАЗУЄМО СТОРІНКИ ВХОДУ/РЕЄСТРАЦІЇ ===
+    if (currentPage === 'login.html' || currentPage === 'register.html') {
+        checkAuthSilent().then(profile => {
+            if (profile) {
+                // Вже авторизований – перенаправляємо на дашборд
+                showToast('Ви вже авторизовані', 'info', 1500);
+                setTimeout(() => window.location.href = 'dashboard.html', 1000);
+                return;
+            }
+            // Інакше показуємо сторінку
+        });
+    }
+
     // === РЕЄСТРАЦІЯ ===
     const registerForm = document.getElementById('registerForm');
     if (registerForm) {
         registerForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            const btn = this.querySelector('button[type="submit"]');
+            
             const fullName = document.getElementById('fullName').value.trim();
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
@@ -26,6 +43,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             errorDiv.classList.add('d-none');
+            disableButton(btn, 'Реєстрація...');
+
             const result = await apiRequest('register.php', 'POST', { email, password, full_name: fullName });
 
             if (result.success) {
@@ -34,6 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.href = 'login.html';
                 }, 1500);
             } else {
+                enableButton(btn);
                 errorDiv.classList.remove('d-none');
                 errorDiv.textContent = result.error || 'Помилка реєстрації';
                 showToast(result.error || 'Помилка реєстрації', 'error');
@@ -46,30 +66,32 @@ document.addEventListener('DOMContentLoaded', function() {
     if (loginForm) {
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
+            const btn = this.querySelector('button[type="submit"]');
+            
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const errorDiv = document.getElementById('loginError');
 
             errorDiv.classList.add('d-none');
+            disableButton(btn, 'Вхід...');
+
             const result = await apiRequest('login.php', 'POST', { email, password });
 
             if (result.success) {
                 showToast('Вхід виконано!', 'success');
-                // Перевіряємо, чи заповнений профіль
                 const profileResult = await apiRequest('profile.php', 'GET');
                 if (profileResult.success && profileResult.profile) {
                     const profile = profileResult.profile;
                     if (!profile.weight || !profile.age) {
-                        // Профіль неповний – відправляємо на налаштування
                         setTimeout(() => window.location.href = 'profile-setup.html', 500);
                     } else {
                         setTimeout(() => window.location.href = 'dashboard.html', 500);
                     }
                 } else {
-                    // Профіль взагалі відсутній
                     setTimeout(() => window.location.href = 'profile-setup.html', 500);
                 }
             } else {
+                enableButton(btn);
                 errorDiv.classList.remove('d-none');
                 errorDiv.textContent = result.error || 'Невірний email або пароль';
                 showToast(result.error || 'Невірний email або пароль', 'error');
@@ -87,60 +109,56 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // === ЗАХИСТ СТОРІНОК ===
-    const currentPath = window.location.pathname;
-    const currentPage = currentPath.split('/').pop();
     const protectedPages = ['dashboard.html', 'stats.html', 'workout.html', 'profile-setup.html'];
-    const isAdminPage = currentPath.includes('/admin/');
+    const isAdminPage = window.location.pathname.includes('/admin/');
 
     if (protectedPages.includes(currentPage) || isAdminPage) {
-        fetch(API_BASE + 'profile.php')
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) {
-                    window.location.href = 'login.html';
-                    return;
-                }
-
-                const profile = data.profile;
-
-                // Сторінка профілю – завжди доступна (без редіректу)
-                if (currentPage === 'profile-setup.html') {
-                    return;
-                }
-
-                // Адмін-сторінки – перевіряємо роль
-                if (isAdminPage) {
-                    if (!profile || !['admin', 'trainer'].includes(profile.role)) {
-                        showToast('Доступ заборонено. Потрібна роль адміністратора або тренера.', 'error');
-                        setTimeout(() => window.location.href = 'dashboard.html', 1000);
-                        return;
-                    }
-                    return; // Дозволено
-                }
-
-                // Інші захищені сторінки – перевіряємо заповненість профілю
-                if (!profile || !profile.weight || !profile.age) {
-                    window.location.href = 'profile-setup.html';
-                }
-                // Інакше залишаємось
-            })
-            .catch(() => {
+        checkAuthSilent().then(profile => {
+            if (!profile) {
                 window.location.href = 'login.html';
-            });
+                return;
+            }
+
+            // Сторінка профілю – завжди доступна (без редіректу)
+            if (currentPage === 'profile-setup.html') {
+                return;
+            }
+
+            // Адмін-сторінки – перевіряємо роль
+            if (isAdminPage) {
+                if (!['admin', 'trainer'].includes(profile.role)) {
+                    showToast('Доступ заборонено. Потрібна роль адміністратора або тренера.', 'error');
+                    setTimeout(() => window.location.href = 'dashboard.html', 1000);
+                    return;
+                }
+                return;
+            }
+
+            // Інші захищені сторінки – перевіряємо заповненість профілю
+            if (!profile.weight || !profile.age) {
+                window.location.href = 'profile-setup.html';
+            }
+        });
     }
 
     // === ПОКАЗ АДМІН-ПОСИЛАННЯ В НАВІГАЦІЇ ===
     const adminNavItem = document.getElementById('adminNavItem');
     if (adminNavItem) {
-        fetch(API_BASE + 'profile.php')
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.profile && ['admin', 'trainer'].includes(data.profile.role)) {
-                    adminNavItem.style.display = 'block';
-                } else {
-                    adminNavItem.style.display = 'none';
-                }
-            })
-            .catch(() => {});
+        checkAuthSilent().then(profile => {
+            if (profile && ['admin', 'trainer'].includes(profile.role)) {
+                adminNavItem.style.display = 'block';
+            } else {
+                adminNavItem.style.display = 'none';
+            }
+        });
     }
+
+    // === АВТОМАТИЧНЕ ПРИХОВАННЯ ПОВІДОМЛЕНЬ ПРО ПОМИЛКИ ===
+    document.querySelectorAll('.alert-danger').forEach(el => {
+        if (el.textContent.trim()) {
+            setTimeout(() => {
+                el.classList.add('d-none');
+            }, 5000);
+        }
+    });
 });

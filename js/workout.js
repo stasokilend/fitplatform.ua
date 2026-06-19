@@ -6,7 +6,6 @@ let exerciseIndex = 0;
 let exercises = [];
 let isResting = false;
 let timerInterval = null;
-let hrInterval = null;
 let sessionStartTime = null;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -16,7 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
         generateBtn.addEventListener('click', generateWorkout);
     }
 
-    // Перехід на сторінку тренування при кліку на "Почати"
+    // Перехід на сторінку тренування
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('start-workout-btn')) {
             const planId = e.target.dataset.planId;
@@ -30,14 +29,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Генерація тренування на дашборді
+// Генерація тренування
 async function generateWorkout() {
     const btn = document.getElementById('generateWorkoutBtn');
     const status = document.getElementById('generationStatus');
     const container = document.getElementById('currentPlanContainer');
 
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Генерація...';
+    disableButton(btn, 'Генерація...');
     status.textContent = 'Аналіз профілю та підбір вправ...';
 
     try {
@@ -45,8 +43,7 @@ async function generateWorkout() {
 
         if (!result.success) {
             status.textContent = '❌ ' + (result.error || 'Помилка генерації');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-sync me-2"></i>Згенерувати план';
+            enableButton(btn);
             return;
         }
 
@@ -55,16 +52,12 @@ async function generateWorkout() {
         exercises = workout.exercises;
 
         status.textContent = '✅ План згенеровано! ' + workout.total_duration + ' хв, ~' + workout.total_calories + ' ккал';
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-sync me-2"></i>Згенерувати новий план';
-
-        // Відображення плану
+        enableButton(btn);
         renderPlan(workout, container);
 
     } catch (e) {
         status.textContent = '❌ Помилка з\'єднання з сервером';
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-sync me-2"></i>Згенерувати план';
+        enableButton(btn);
     }
 }
 
@@ -109,25 +102,24 @@ async function initWorkoutPage() {
     const planId = params.get('plan_id');
 
     if (!planId) {
-        alert('План не знайдено');
-        window.location.href = 'dashboard.html';
+        showToast('План не знайдено', 'error');
+        setTimeout(() => window.location.href = 'dashboard.html', 1000);
         return;
     }
 
-    // Завантажити план з БД (через API)
     try {
         const result = await apiRequest(`get-plan.php?plan_id=${planId}`, 'GET');
         if (!result.success) {
-            alert('Помилка завантаження плану');
-            window.location.href = 'dashboard.html';
+            showToast('Помилка завантаження плану', 'error');
+            setTimeout(() => window.location.href = 'dashboard.html', 1000);
             return;
         }
         exercises = result.plan.exercises;
         currentPlanId = planId;
         setupWorkout();
     } catch (e) {
-        alert('Помилка з\'єднання');
-        window.location.href = 'dashboard.html';
+        showToast('Помилка з\'єднання', 'error');
+        setTimeout(() => window.location.href = 'dashboard.html', 1000);
     }
 
     // Кнопки керування
@@ -136,8 +128,7 @@ async function initWorkoutPage() {
     document.getElementById('finishWorkoutBtn').addEventListener('click', finishWorkout);
     document.getElementById('sendHrBtn').addEventListener('click', sendHeartRate);
 
-    // Автоматичне надсилання пульсу (імітація кожні 5 секунд)
-    // Для реального використання - інтеграція з трекером
+    // Автоматичне надсилання пульсу (кожні 5 секунд, якщо введено)
     setInterval(() => {
         const input = document.getElementById('heartRateInput');
         if (input.value && parseInt(input.value) > 0) {
@@ -151,11 +142,9 @@ function setupWorkout() {
     exerciseIndex = 0;
     showExercise(exerciseIndex);
 
-    // Запуск таймера сесії
     sessionStartTime = Date.now();
     setInterval(updateSessionTimer, 1000);
 
-    // Створення сесії в БД
     apiRequest('start-session.php', 'POST', { plan_id: currentPlanId })
         .then(res => {
             if (res.success) currentSessionId = res.session_id;
@@ -176,11 +165,9 @@ function showExercise(index) {
     document.getElementById('exerciseReps').textContent = ex.reps;
     document.getElementById('exerciseRest').textContent = ex.rest_seconds + 'с';
 
-    // Скидання прогресу
     document.getElementById('exerciseProgress').style.width = '100%';
     document.getElementById('exerciseTimer').textContent = '0с';
 
-    // Активувати кнопки
     document.getElementById('startExerciseBtn').disabled = false;
     document.getElementById('restBtn').disabled = true;
 }
@@ -190,7 +177,7 @@ function startExercise() {
     btn.disabled = true;
 
     const ex = exercises[exerciseIndex];
-    let timeLeft = ex.duration_minutes * 60; // секунд
+    let timeLeft = ex.duration_minutes * 60;
     const progressBar = document.getElementById('exerciseProgress');
     const timerDisplay = document.getElementById('exerciseTimer');
     const totalTime = timeLeft;
@@ -209,6 +196,7 @@ function startExercise() {
             timerDisplay.textContent = 'Готово!';
             document.getElementById('restBtn').disabled = false;
             document.getElementById('startExerciseBtn').disabled = true;
+            showToast('Підхід завершено! Відпочиньте.', 'info', 2000);
         }
     }, 1000);
 }
@@ -235,6 +223,7 @@ function startRest() {
             exerciseIndex++;
             if (exerciseIndex < exercises.length) {
                 showExercise(exerciseIndex);
+                showToast('Наступна вправа: ' + exercises[exerciseIndex].name, 'info', 2000);
             } else {
                 finishWorkout();
             }
@@ -245,12 +234,10 @@ function startRest() {
 async function sendHeartRate() {
     const input = document.getElementById('heartRateInput');
     const bpm = parseInt(input.value);
-    if (!bpm || bpm < 30 || bpm > 220) {
-        return;
-    }
+    if (!bpm || bpm < 30 || bpm > 220) return;
 
     if (!currentSessionId) {
-        alert('Спочатку розпочніть тренування');
+        showToast('Спочатку розпочніть тренування', 'warning');
         return;
     }
 
@@ -260,7 +247,6 @@ async function sendHeartRate() {
     });
 
     if (result.success) {
-        // Оновлення індикатора зони
         const zone = result.zone;
         const indicator = document.getElementById('hrZoneIndicator');
         const zoneText = document.getElementById('hrZoneText');
@@ -272,11 +258,20 @@ async function sendHeartRate() {
             'high': '#ffc107',
             'danger': '#dc3545'
         };
+        const zoneLabels = {
+            'low': 'Низька',
+            'normal': 'Оптимальна',
+            'high': 'Висока',
+            'danger': 'Небезпечна!'
+        };
+
         indicator.style.backgroundColor = zoneColors[zone] || '#6c757d';
-        zoneText.textContent = zone === 'low' ? 'Низька' :
-                               zone === 'normal' ? 'Оптимальна' :
-                               zone === 'high' ? 'Висока' : 'Небезпечна!';
+        zoneText.textContent = zoneLabels[zone] || 'Невідома';
         recText.textContent = 'Рекомендація: ' + (result.recommendation || 'Продовжуйте');
+        
+        if (zone === 'danger') {
+            showToast('⚠️ Увага! Пульс занадто високий! Зменште інтенсивність.', 'error', 3000);
+        }
     }
 }
 
@@ -292,24 +287,33 @@ async function finishWorkout() {
     if (timerInterval) clearInterval(timerInterval);
 
     if (!currentSessionId) {
-        alert('Тренування ще не розпочато');
+        showToast('Тренування ще не розпочато', 'warning');
         return;
     }
 
     const totalMinutes = Math.floor((Date.now() - sessionStartTime) / 60000);
+    if (totalMinutes < 1) {
+        showToast('Тренування занадто коротке', 'warning');
+        return;
+    }
+
     const confirmFinish = confirm('Завершити тренування?');
     if (!confirmFinish) return;
+
+    const btn = document.getElementById('finishWorkoutBtn');
+    disableButton(btn, 'Завершення...');
 
     const result = await apiRequest('finish-session.php', 'POST', {
         session_id: currentSessionId,
         duration_minutes: totalMinutes,
-        calories_burned: Math.round(totalMinutes * 5) // приблизно 5 ккал/хв
+        calories_burned: Math.round(totalMinutes * 5)
     });
 
     if (result.success) {
-        alert('Тренування завершено! Відмінна робота! 🎉');
-        window.location.href = 'stats.html';
+        showToast('🎉 Тренування завершено! Відмінна робота!', 'success', 4000);
+        setTimeout(() => window.location.href = 'stats.html', 1500);
     } else {
-        alert('Помилка збереження');
+        enableButton(btn);
+        showToast('Помилка збереження', 'error');
     }
 }

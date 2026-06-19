@@ -1,0 +1,51 @@
+<?php
+require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../controllers/GamificationController.php';
+
+header('Content-Type: application/json');
+
+if (!isLoggedIn()) {
+    echo json_encode(['success' => false, 'error' => 'Необхідно авторизуватися']);
+    exit;
+}
+
+$userId = $_SESSION['user_id'];
+$gamification = new GamificationController($userId);
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+
+// --- ПОЛУЧЕНИЕ СТАТИСТИКИ ---
+if ($action === 'stats' || !$action) {
+    $stats = $gamification->getGamificationStats();
+    echo json_encode(['success' => true, 'data' => $stats]);
+    exit;
+}
+
+// --- ПОЛУЧЕНИЕ ДОСТИЖЕНИЙ ---
+if ($action === 'achievements') {
+    $achievements = $gamification->getUserAchievements();
+    echo json_encode(['success' => true, 'data' => $achievements]);
+    exit;
+}
+
+// --- ПОЛУЧЕНИЕ ПОСЛЕДНИХ ДОСТИЖЕНИЙ ---
+if ($action === 'recent') {
+    $limit = (int)($_GET['limit'] ?? 5);
+    $recent = $gamification->getRecentAchievements($limit);
+    echo json_encode(['success' => true, 'data' => $recent]);
+    exit;
+}
+
+// --- ОБНОВЛЕНИЕ СТАТИСТИКИ ПОСЛЕ ТРЕНИРОВКИ ---
+if ($action === 'update_workout') {
+    $calories = (int)($_POST['calories'] ?? 0);
+    $exercisesCompleted = (int)($_POST['exercises'] ?? 0);
+    $isComplete = $_POST['is_complete'] ?? true;
+    
+    $gamification->updateStats($calories, $exercisesCompleted, $isComplete);
+    
+    echo json_encode(['success' => true]);
+    exit;
+}
+
+echo json_encode(['success' => false, 'error' => 'Невідома дія']);
+?>

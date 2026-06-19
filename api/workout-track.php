@@ -76,7 +76,33 @@ if ($action === 'finish') {
     
     echo json_encode(['success' => $success]);
     exit;
+
+    // Обновляем геймификацию
+    if ($success) {
+        require_once __DIR__ . '/../controllers/GamificationController.php';
+        
+        // Получаем количество выполненных упражнений и калорий
+        $stmt = $pdo->prepare("
+            SELECT 
+                COUNT(CASE WHEN pe.is_completed = 1 THEN 1 END) as completed,
+                SUM(e.calories_per_min * e.duration_min) as calories
+            FROM plan_exercises pe
+            JOIN exercises e ON pe.exercise_id = e.id
+            WHERE pe.plan_id = ?
+        ");
+        $stmt->execute([$planId]);
+        $data = $stmt->fetch();
+        
+        $gamification = new GamificationController($userId);
+        $gamification->updateStats(
+            $data['calories'] ?? 0,
+            $data['completed'] ?? 0,
+            true
+        );
+    }
 }
 
 echo json_encode(['success' => false, 'error' => 'Невідома дія']);
+
+
 ?>

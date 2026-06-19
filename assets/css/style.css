@@ -704,3 +704,46 @@ body {
 .gap-2 {
     gap: 0.5rem;
 }
+
+/* Анимация для новых достижений */
+@keyframes unlockAchievement {
+    0% {
+        transform: scale(0.5) rotate(-10deg);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.2) rotate(3deg);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+.achievement-card.completed {
+    animation: unlockAchievement 0.6s ease-out;
+}
+
+/* Бейдж уровня */
+.level-badge {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-weight: bold;
+}
+
+/* Анимация для значков */
+.achievement-icon i {
+    transition: all 0.3s ease;
+}
+
+.achievement-card.completed:hover .achievement-icon i {
+    transform: scale(1.2) rotate(-5deg);
+}
+
+/* Прогресс-бар достижения */
+.achievement-card .progress-bar {
+    transition: width 1s ease;
+}

@@ -48,3 +48,5 @@ RewriteRule ^([^/]+)/?$ index.php?page=$1 [QSA,L]
 <IfModule mod_autoindex.c>
     Options -Indexes
 </IfModule>
+
+RewriteRule ^google-fit-callback\.php$ google-fit-callback.php [L]

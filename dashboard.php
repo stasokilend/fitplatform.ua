@@ -81,6 +81,27 @@ ob_start();
                             <i class="bi bi-plus-circle"></i> Створити
                         </a>
                     </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'health' ? 'active' : ''; ?>" 
+                        href="/dashboard.php?page=health">
+                            <i class="bi bi-heart-pulse"></i> Здоров'я
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'achievements' ? 'active' : ''; ?>" 
+                        href="/dashboard.php?page=achievements">
+                            <i class="bi bi-trophy"></i> Достигнення
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'google-fit' ? 'active' : ''; ?>" 
+                        href="/dashboard.php?page=google-fit">
+                            <i class="bi bi-google"></i> Google Fit
+                        </a>
+                    </li>
                     
                     <hr>
                     

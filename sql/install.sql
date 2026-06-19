@@ -154,3 +154,130 @@ UPDATE user_profiles SET profile_completed = 1 WHERE age IS NOT NULL AND weight 
 -- Создание админа (пароль: admin123)
 INSERT INTO users (email, password_hash, full_name, role, is_active) 
 VALUES ('admin@fitplatform.ua', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Адміністратор', 'admin', 1);
+
+-- Таблица достижений
+CREATE TABLE achievements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    icon VARCHAR(50) DEFAULT 'bi-trophy',
+    category ENUM('workout', 'streak', 'strength', 'health', 'social', 'special') DEFAULT 'workout',
+    requirement_type ENUM('workouts', 'streak', 'calories', 'exercises', 'weight', 'special') NOT NULL,
+    requirement_value INT NOT NULL,
+    points INT DEFAULT 10,
+    badge_color VARCHAR(20) DEFAULT 'gold',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Таблица достижений пользователя
+CREATE TABLE user_achievements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    achievement_id INT NOT NULL,
+    unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    progress INT DEFAULT 0,
+    is_completed BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (achievement_id) REFERENCES achievements(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_achievement (user_id, achievement_id)
+);
+
+-- Таблица уровней пользователя
+CREATE TABLE user_levels (
+    user_id INT PRIMARY KEY,
+    level INT DEFAULT 1,
+    experience INT DEFAULT 0,
+    next_level_experience INT DEFAULT 100,
+    total_experience INT DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Таблица статистики пользователя для геймификации
+CREATE TABLE user_gamification_stats (
+    user_id INT PRIMARY KEY,
+    total_workouts INT DEFAULT 0,
+    total_calories INT DEFAULT 0,
+    current_streak INT DEFAULT 0,
+    max_streak INT DEFAULT 0,
+    total_exercises_completed INT DEFAULT 0,
+    last_workout_date DATE NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Вставляем начальные достижения
+INSERT INTO achievements (code, name, description, icon, category, requirement_type, requirement_value, points, badge_color) VALUES
+-- Достижения по тренировкам
+('first_workout', 'Перше тренування', 'Виконайте перше тренування', 'bi-star', 'workout', 'workouts', 1, 5, 'bronze'),
+('workout_5', '5 тренувань', 'Виконайте 5 тренувань', 'bi-emoji-smile', 'workout', 'workouts', 5, 10, 'bronze'),
+('workout_25', '25 тренувань', 'Виконайте 25 тренувань', 'bi-fire', 'workout', 'workouts', 25, 20, 'silver'),
+('workout_100', '100 тренувань', 'Виконайте 100 тренувань', 'bi-trophy', 'workout', 'workouts', 100, 50, 'gold'),
+('workout_365', '365 тренувань', 'Виконайте 365 тренувань (рік)', 'bi-gem', 'workout', 'workouts', 365, 100, 'platinum'),
+
+-- Достижения по сериям
+('streak_3', '3 дні поспіль', 'Тренуйтеся 3 дні поспіль', 'bi-calendar-check', 'streak', 'streak', 3, 10, 'bronze'),
+('streak_7', '7 днів поспіль', 'Тренуйтеся 7 днів поспіль', 'bi-calendar2-week', 'streak', 'streak', 7, 20, 'silver'),
+('streak_30', '30 днів поспіль', 'Тренуйтеся 30 днів поспіль', 'bi-calendar2-month', 'streak', 'streak', 30, 50, 'gold'),
+('streak_100', '100 днів поспіль', 'Тренуйтеся 100 днів поспіль', 'bi-calendar2-range', 'streak', 'streak', 100, 100, 'platinum'),
+
+-- Достижения по калориям
+('calories_1000', '1000 калорій', 'Спаліть 1000 калорій загалом', 'bi-fire', 'strength', 'calories', 1000, 10, 'bronze'),
+('calories_10000', '10000 калорій', 'Спаліть 10000 калорій загалом', 'bi-fire', 'strength', 'calories', 10000, 25, 'silver'),
+('calories_100000', '100000 калорій', 'Спаліть 100000 калорій загалом', 'bi-fire', 'strength', 'calories', 100000, 75, 'gold'),
+
+-- Достижения по упражнениям
+('exercises_50', '50 вправ', 'Виконайте 50 вправ', 'bi-dumbbell', 'strength', 'exercises', 50, 10, 'bronze'),
+('exercises_500', '500 вправ', 'Виконайте 500 вправ', 'bi-dumbbell', 'strength', 'exercises', 500, 30, 'silver'),
+('exercises_5000', '5000 вправ', 'Виконайте 5000 вправ', 'bi-dumbbell', 'strength', 'exercises', 5000, 80, 'gold'),
+
+-- Специальные достижения
+('early_bird', 'Рання пташка', 'Виконайте тренування до 7:00', 'bi-sunrise', 'special', 'special', 1, 15, 'bronze'),
+('night_owl', 'Нічна сова', 'Виконайте тренування після 22:00', 'bi-moon', 'special', 'special', 1, 15, 'bronze'),
+('perfect_workout', 'Ідеальне тренування', 'Виконайте всі вправи тренування', 'bi-check-circle', 'special', 'special', 1, 20, 'gold'),
+('consistency', 'Послідовність', 'Повністю виконайте 10 тренувань', 'bi-award', 'special', 'special', 10, 30, 'silver');
+
+-- Таблица для хранения токенов Google Fit
+CREATE TABLE IF NOT EXISTS user_google_fit_tokens (
+    user_id INT PRIMARY KEY,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    token_expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Таблица для синхронизированных данных активности
+CREATE TABLE IF NOT EXISTS user_activity_data (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    activity_date DATE NOT NULL,
+    steps INT DEFAULT 0,
+    calories INT DEFAULT 0,
+    distance FLOAT DEFAULT 0,
+    active_minutes INT DEFAULT 0,
+    source ENUM('manual', 'google_fit', 'apple_health') DEFAULT 'manual',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_date (user_id, activity_date),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Таблица логов синхронизации
+CREATE TABLE IF NOT EXISTS google_fit_sync_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    sync_start DATETIME NOT NULL,
+    sync_end DATETIME NOT NULL,
+    data_summary TEXT,
+    sync_status ENUM('pending', 'completed', 'failed') DEFAULT 'completed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Добавляем поля для источника данных в существующие таблицы
+ALTER TABLE heart_rate_logs ADD COLUMN source VARCHAR(50) DEFAULT 'manual';
+ALTER TABLE heart_rate_logs ADD COLUMN hr_avg INT DEFAULT NULL;

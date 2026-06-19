@@ -401,7 +401,7 @@ body {
 
 .sidebar .user-role {
     font-size: 0.8rem;
-    color: var(--gray);
+    color: var(--white);
 }
 
 .sidebar .nav-link {

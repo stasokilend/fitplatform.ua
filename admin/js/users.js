@@ -13,7 +13,7 @@ async function loadUsers() {
     const check = await apiRequest('admin/check.php', 'GET');
     if (!check.success) {
         showToast('Доступ заборонено', 'error');
-        setTimeout(() => window.location.href = '../dashboard.html', 1000);
+        setTimeout(() => window.location.href = '../dashboard.php', 1000);
         return;
     }
 

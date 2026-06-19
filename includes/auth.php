@@ -8,7 +8,7 @@ function isAuthenticated() {
 
 function requireAuth() {
     if (!isAuthenticated()) {
-        header('Location: /login.html');
+        header('Location: /login.php');
         exit;
     }
 }
@@ -24,7 +24,7 @@ function getCurrentUser() {
 function logout() {
     session_start();
     session_destroy();
-    header('Location: /login.html');
+    header('Location: /login.php');
     exit;
 }
 ?>

@@ -63,13 +63,13 @@ function checkAuth() {
         .then(res => res.json())
         .then(data => {
             if (!data.success) {
-                window.location.href = 'login.html';
+                window.location.href = '/login.php';
                 return null;
             }
             return data.profile;
         })
         .catch(() => {
-            window.location.href = 'login.html';
+            window.location.href = '/login.php';
             return null;
         });
 }
@@ -86,7 +86,7 @@ function checkAuthSilent() {
 }
 
 // === ВИХІД ===
-function logout(redirectUrl = 'login.html') {
+function logout(redirectUrl = '/login.php') {
     fetch(API_BASE + 'logout.php', { method: 'POST' })
         .then(() => {
             showToast('Ви вийшли з аккаунту', 'info');

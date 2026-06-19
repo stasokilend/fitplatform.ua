@@ -4,6 +4,7 @@
 // Визначаємо поточну сторінку для підсвічування активного пункту
 $currentPage = basename($_SERVER['PHP_SELF']);
 $isAdminPage = strpos($_SERVER['REQUEST_URI'], '/admin/') !== false;
+$isAuthPage = in_array($currentPage, ['login.php', 'register.php']);
 
 // Якщо ми в адмінці, коригуємо шляхи
 $basePath = $isAdminPage ? '../' : '';
@@ -33,9 +34,10 @@ $basePath = $isAdminPage ? '../' : '';
     <!-- Навігація -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="<?php echo $basePath; ?>dashboard.php">
+            <a class="navbar-brand" href="<?php echo $isAuthPage ? $basePath . 'index.php' : $basePath . 'dashboard.php'; ?>">
                 <i class="fas fa-heartbeat me-2"></i>FitPlatform
             </a>
+            <?php if (!$isAuthPage): ?>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -77,6 +79,7 @@ $basePath = $isAdminPage ? '../' : '';
                     </li>
                 </ul>
             </div>
+            <?php endif; ?>
         </div>
     </nav>
 

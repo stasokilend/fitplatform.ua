@@ -281,3 +281,4 @@ CREATE TABLE IF NOT EXISTS google_fit_sync_log (
 -- Добавляем поля для источника данных в существующие таблицы
 ALTER TABLE heart_rate_logs ADD COLUMN source VARCHAR(50) DEFAULT 'manual';
 ALTER TABLE heart_rate_logs ADD COLUMN hr_avg INT DEFAULT NULL;
+

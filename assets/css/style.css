@@ -747,3 +747,521 @@ body {
 .achievement-card .progress-bar {
     transition: width 1s ease;
 }
+
+/* ========================================
+   МОБИЛЬНАЯ ВЕРСИЯ
+   ======================================== */
+
+/* ---------- Mobile Bottom Navigation ---------- */
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    z-index: 1050;
+    padding: 6px 0 env(safe-area-inset-bottom, 6px) 0;
+    display: none;
+}
+
+.mobile-nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 0 4px;
+    color: var(--gray);
+    text-decoration: none;
+    transition: var(--transition);
+    position: relative;
+    font-size: 0.6rem;
+}
+
+.mobile-nav-link i {
+    font-size: 1.3rem;
+    margin-bottom: 1px;
+    transition: var(--transition);
+}
+
+.mobile-nav-link span {
+    font-size: 0.55rem;
+    font-weight: 500;
+}
+
+.mobile-nav-link.active {
+    color: var(--primary);
+}
+
+.mobile-nav-link.active i {
+    transform: translateY(-2px);
+}
+
+.mobile-nav-link.active::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
+    background: var(--gradient-primary);
+    border-radius: 0 0 4px 4px;
+}
+
+.mobile-nav-link:hover {
+    color: var(--primary);
+}
+
+/* ---------- Mobile Header ---------- */
+.mobile-header {
+    display: none;
+    position: sticky;
+    top: 0;
+    z-index: 1040;
+    background: var(--white);
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.mobile-header .brand {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--dark);
+    text-decoration: none;
+}
+
+.mobile-header .brand i {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.mobile-header .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mobile-header .header-actions .btn-icon {
+    width: 36px;
+    height: 36px;
+    border: none;
+    background: var(--light-gray);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--dark);
+    transition: var(--transition);
+    position: relative;
+}
+
+.mobile-header .header-actions .btn-icon:hover {
+    background: rgba(108, 99, 255, 0.1);
+    color: var(--primary);
+}
+
+.mobile-header .header-actions .btn-icon .badge-dot {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    background: var(--danger);
+    border-radius: 50%;
+    border: 2px solid var(--white);
+}
+
+/* ---------- Mobile Sidebar (Drawer) ---------- */
+.mobile-drawer {
+    position: fixed;
+    top: 0;
+    left: -100%;
+    width: 280px;
+    height: 100%;
+    background: var(--white);
+    z-index: 1060;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 30px rgba(0, 0, 0, 0.15);
+    overflow-y: auto;
+}
+
+.mobile-drawer.open {
+    left: 0;
+}
+
+.mobile-drawer-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1059;
+    display: none;
+    backdrop-filter: blur(4px);
+}
+
+.mobile-drawer-overlay.show {
+    display: block;
+}
+
+.mobile-drawer .drawer-header {
+    padding: 20px;
+    background: var(--gradient-primary);
+    color: var(--white);
+    text-align: center;
+    border-radius: 0 0 30px 30px;
+}
+
+.mobile-drawer .drawer-header .avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    font-size: 2rem;
+}
+
+.mobile-drawer .drawer-header .name {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.mobile-drawer .drawer-header .role {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+
+.mobile-drawer .drawer-body {
+    padding: 12px 16px;
+}
+
+.mobile-drawer .drawer-body .nav-link {
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    color: var(--dark);
+    font-weight: 500;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mobile-drawer .drawer-body .nav-link i {
+    width: 24px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.mobile-drawer .drawer-body .nav-link:hover {
+    background: rgba(108, 99, 255, 0.08);
+    color: var(--primary);
+}
+
+.mobile-drawer .drawer-body .nav-link.active {
+    background: var(--gradient-primary);
+    color: var(--white);
+}
+
+.mobile-drawer .drawer-body .nav-link.text-danger:hover {
+    background: rgba(255, 101, 132, 0.1);
+    color: var(--danger);
+}
+
+/* ---------- Мобильные карточки ---------- */
+.mobile-card {
+    border: none;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    margin-bottom: 12px;
+}
+
+.mobile-card:hover {
+    box-shadow: var(--shadow-hover);
+}
+
+.mobile-card .card-body {
+    padding: 16px;
+}
+
+.mobile-card .stat-number {
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+/* ---------- Мобильные кнопки ---------- */
+.mobile-btn {
+    padding: 12px 20px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    width: 100%;
+    transition: var(--transition);
+}
+
+.mobile-btn-primary {
+    background: var(--gradient-primary);
+    color: var(--white);
+    border: none;
+}
+
+.mobile-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    color: var(--white);
+}
+
+/* ---------- Мобильные поля ввода ---------- */
+.mobile-input {
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    border: 2px solid #E8ECF1;
+    font-size: 1rem;
+    transition: var(--transition);
+    width: 100%;
+}
+
+.mobile-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(108, 99, 255, 0.15);
+    outline: none;
+}
+
+/* ---------- Мобильные уведомления ---------- */
+.mobile-toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--dark);
+    color: var(--white);
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 1070;
+    display: none;
+    animation: slideUp 0.3s ease-out;
+    max-width: 90%;
+    text-align: center;
+}
+
+.mobile-toast.show {
+    display: block;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.mobile-toast.success {
+    background: var(--gradient-success);
+}
+
+.mobile-toast.error {
+    background: linear-gradient(135deg, #FF6B6B, #EE5A24);
+}
+
+/* ---------- Мобильные свайпы ---------- */
+.swipeable-item {
+    transition: transform 0.3s ease;
+}
+
+.swipeable-item.swiped {
+    transform: translateX(-60px);
+}
+
+/* ---------- Адаптивность ---------- */
+@media (max-width: 991px) {
+    /* Скрываем десктопный сайдбар */
+    .desktop-sidebar {
+        display: none !important;
+    }
+    
+    /* Показываем мобильные элементы */
+    .mobile-header {
+        display: flex !important;
+    }
+    
+    .mobile-bottom-nav {
+        display: block !important;
+    }
+    
+    /* Отступ для контента */
+    .main-content {
+        padding-bottom: 80px !important;
+        padding-top: 0 !important;
+    }
+    
+    /* Уменьшаем карточки */
+    .stat-card .stat-number {
+        font-size: 1.2rem;
+    }
+    
+    /* Убираем десктопный сайдбар из дашборда */
+    .sidebar {
+        display: none !important;
+    }
+    
+    /* Полная ширина для колонок */
+    .col-lg-9,
+    .col-lg-10 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        padding: 0 12px !important;
+    }
+    
+    .container-fluid {
+        padding: 0 12px !important;
+    }
+    
+    /* Уменьшаем заголовки */
+    .h1, .h2, h1, h2 {
+        font-size: 1.3rem !important;
+    }
+    
+    .display-4 {
+        font-size: 1.5rem !important;
+    }
+    
+    /* Улучшаем тач-таргеты */
+    .nav-link,
+    .btn,
+    .list-group-item,
+    .card {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    .btn:active {
+        transform: scale(0.96);
+    }
+    
+    /* Плавные переходы */
+    * {
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+@media (max-width: 576px) {
+    /* Еще меньше для маленьких телефонов */
+    .mobile-card .card-body {
+        padding: 12px;
+    }
+    
+    .stat-card .stat-number {
+        font-size: 1rem;
+    }
+    
+    .mobile-nav-link i {
+        font-size: 1.1rem;
+    }
+    
+    .mobile-nav-link span {
+        font-size: 0.5rem;
+    }
+    
+    .mobile-toast {
+        bottom: 70px;
+        font-size: 0.8rem;
+        padding: 10px 16px;
+        max-width: 95%;
+    }
+}
+
+/* ---------- Safe area для iPhone ---------- */
+@supports (padding: max(0px)) {
+    .mobile-bottom-nav {
+        padding-bottom: max(6px, env(safe-area-inset-bottom));
+    }
+}
+
+/* Мобильные карточки на дашборде */
+@media (max-width: 576px) {
+    .dashboard-stats .col-md-3 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+    
+    .dashboard-stats .stat-card {
+        padding: 12px;
+    }
+    
+    .dashboard-stats .stat-number {
+        font-size: 1.2rem;
+    }
+    
+    .dashboard-stats .stat-label {
+        font-size: 0.7rem;
+    }
+    
+    .dashboard-stats .stat-icon {
+        width: 32px;
+        height: 32px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Мобильные кнопки в карточках */
+@media (max-width: 576px) {
+    .btn {
+        font-size: 0.85rem;
+        padding: 8px 14px;
+    }
+    
+    .btn-lg {
+        font-size: 0.95rem;
+        padding: 10px 20px;
+    }
+    
+    .list-group-item {
+        padding: 10px 12px;
+    }
+    
+    .table td,
+    .table th {
+        padding: 6px 8px;
+        font-size: 0.8rem;
+    }
+    
+    .modal-dialog {
+        margin: 10px;
+    }
+    
+    .modal-body {
+        padding: 16px;
+    }
+}
+
+/* Тач-фидбек для мобильных */
+@media (hover: none) {
+    .card:hover {
+        transform: none !important;
+    }
+    
+    .btn:hover {
+        transform: none !important;
+    }
+    
+    .stat-card:hover {
+        transform: none !important;
+    }
+    
+    .workout-card:hover {
+        transform: none !important;
+    }
+}

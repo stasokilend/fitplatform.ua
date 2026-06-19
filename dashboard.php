@@ -18,7 +18,7 @@ ob_start();
 <div class="container-fluid">
     <div class="row">
         <!-- Боковое меню -->
-        <nav class="col-md-3 col-lg-2 d-md-block sidebar py-4 vh-100 border-end">
+        <nav class="col-md-3 col-lg-2 d-md-block sidebar py-4 vh-100 border-end desktop-sidebar">
             <div class="position-sticky">
                 <div class="text-center mb-4">
                     <div class="user-avatar">

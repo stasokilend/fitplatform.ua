@@ -12,17 +12,17 @@
     <!-- Навігація -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="index.html"><i class="fas fa-heartbeat me-2"></i>FitPlatform</a>
+            <a class="navbar-brand" href="index.php"><i class="fas fa-heartbeat me-2"></i>FitPlatform</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="index.html"><i class="fas fa-tachometer-alt"></i> Дашборд</a></li>
-                    <li class="nav-item"><a class="nav-link" href="users.html"><i class="fas fa-users"></i> Користувачі</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="exercises.html"><i class="fas fa-dumbbell"></i> Вправи</a></li>
-                    <li class="nav-item"><a class="nav-link" href="stats.html"><i class="fas fa-chart-pie"></i> Статистика</a></li>
-                    <li class="nav-item"><a class="nav-link" href="../dashboard.html"><i class="fas fa-user"></i> Кабінет</a></li>
+                    <li class="nav-item"><a class="nav-link" href="index.php"><i class="fas fa-tachometer-alt"></i> Дашборд</a></li>
+                    <li class="nav-item"><a class="nav-link" href="users.php"><i class="fas fa-users"></i> Користувачі</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="exercises.php"><i class="fas fa-dumbbell"></i> Вправи</a></li>
+                    <li class="nav-item"><a class="nav-link" href="stats.php"><i class="fas fa-chart-pie"></i> Статистика</a></li>
+                    <li class="nav-item"><a class="nav-link" href="../dashboard.php"><i class="fas fa-user"></i> Кабінет</a></li>
                     <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Вихід</a></li>
                 </ul>
             </div>

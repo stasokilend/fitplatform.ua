@@ -1,6 +1,23 @@
 // js/config.js
 
-const API_BASE = '/api/';
+const APP_ROOT_URL = new URL('../', document.currentScript.src);
+const API_BASE = new URL('api/', APP_ROOT_URL).href;
+
+function appUrl(path = '') {
+    return new URL(path.replace(/^\/+/, ''), APP_ROOT_URL).href;
+}
+
+async function parseJsonResponse(res) {
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+        return res.json();
+    }
+
+    return {
+        success: false,
+        error: res.status ? `Помилка сервера (${res.status})` : 'Помилка сервера'
+    };
+}
 
 // === TOAST СИСТЕМА ===
 function showToast(message, type = 'info', duration = 4000) {
@@ -60,16 +77,16 @@ function enableButton(btn) {
 // === ПЕРЕВІРКА АВТОРИЗАЦІЇ ===
 function checkAuth() {
     return fetch(API_BASE + 'profile.php')
-        .then(res => res.json())
+        .then(parseJsonResponse)
         .then(data => {
             if (!data.success) {
-                window.location.href = 'login.html';
+                window.location.href = appUrl('login.php');
                 return null;
             }
             return data.profile;
         })
         .catch(() => {
-            window.location.href = 'login.html';
+            window.location.href = appUrl('login.php');
             return null;
         });
 }
@@ -77,7 +94,7 @@ function checkAuth() {
 // === ПЕРЕВІРКА АВТОРИЗАЦІЇ (без редіректу) ===
 function checkAuthSilent() {
     return fetch(API_BASE + 'profile.php')
-        .then(res => res.json())
+        .then(parseJsonResponse)
         .then(data => {
             if (!data.success) return null;
             return data.profile;
@@ -86,7 +103,7 @@ function checkAuthSilent() {
 }
 
 // === ВИХІД ===
-function logout(redirectUrl = 'login.html') {
+function logout(redirectUrl = appUrl('login.php')) {
     fetch(API_BASE + 'logout.php', { method: 'POST' })
         .then(() => {
             showToast('Ви вийшли з аккаунту', 'info');
@@ -104,5 +121,5 @@ function apiRequest(url, method = 'GET', data = null) {
         headers: { 'Content-Type': 'application/json' },
     };
     if (data) options.body = JSON.stringify(data);
-    return fetch(API_BASE + url, options).then(res => res.json());
+    return fetch(API_BASE + url, options).then(parseJsonResponse);
 }

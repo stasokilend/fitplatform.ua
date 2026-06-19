@@ -19,12 +19,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('start-workout-btn')) {
             const planId = e.target.dataset.planId;
-            window.location.href = `workout.html?plan_id=${planId}`;
+            window.location.href = appUrl(`workout.php?plan_id=${planId}`);
         }
     });
 
     // Ініціалізація сторінки тренування
-    if (window.location.pathname.includes('workout.html')) {
+    if (window.location.pathname.includes('workout.php')) {
         initWorkoutPage();
     }
 });
@@ -103,7 +103,7 @@ async function initWorkoutPage() {
 
     if (!planId) {
         showToast('План не знайдено', 'error');
-        setTimeout(() => window.location.href = 'dashboard.html', 1000);
+        setTimeout(() => window.location.href = appUrl('dashboard.php'), 1000);
         return;
     }
 
@@ -111,7 +111,7 @@ async function initWorkoutPage() {
         const result = await apiRequest(`get-plan.php?plan_id=${planId}`, 'GET');
         if (!result.success) {
             showToast('Помилка завантаження плану', 'error');
-            setTimeout(() => window.location.href = 'dashboard.html', 1000);
+            setTimeout(() => window.location.href = appUrl('dashboard.php'), 1000);
             return;
         }
         exercises = result.plan.exercises;
@@ -119,7 +119,7 @@ async function initWorkoutPage() {
         setupWorkout();
     } catch (e) {
         showToast('Помилка з\'єднання', 'error');
-        setTimeout(() => window.location.href = 'dashboard.html', 1000);
+        setTimeout(() => window.location.href = appUrl('dashboard.php'), 1000);
     }
 
     // Кнопки керування
@@ -311,7 +311,7 @@ async function finishWorkout() {
 
     if (result.success) {
         showToast('🎉 Тренування завершено! Відмінна робота!', 'success', 4000);
-        setTimeout(() => window.location.href = 'stats.html', 1500);
+        setTimeout(() => window.location.href = appUrl('stats.php'), 1500);
     } else {
         enableButton(btn);
         showToast('Помилка збереження', 'error');

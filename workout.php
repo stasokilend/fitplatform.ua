@@ -11,7 +11,7 @@
 <body>
     <nav class="navbar navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="dashboard.html"><i class="fas fa-arrow-left me-2"></i>Назад до кабінету</a>
+            <a class="navbar-brand" href="dashboard.php"><i class="fas fa-arrow-left me-2"></i>Назад до кабінету</a>
             <span class="navbar-text text-white" id="sessionTimer">00:00</span>
         </div>
     </nav>

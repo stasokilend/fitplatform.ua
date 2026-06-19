@@ -2,8 +2,6 @@
 // register.php - Сторінка реєстрації
 
 $pageTitle = 'Реєстрація – FitPlatform';
-$extraScripts = '<script src="js/auth.js"></script>';
-
 require_once __DIR__ . '/includes/header.php';
 ?>
 

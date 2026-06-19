@@ -117,7 +117,7 @@ async function deleteAccount() {
     const result = await apiRequest('delete-account.php', 'POST');
     if (result.success) {
         showToast('Аккаунт видалено', 'info');
-        setTimeout(() => window.location.href = 'register.html', 1500);
+        setTimeout(() => window.location.href = appUrl('register.php'), 1500);
     } else {
         showToast(result.error || 'Помилка', 'error');
     }

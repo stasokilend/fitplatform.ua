@@ -4,14 +4,10 @@
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../classes/Database.php';
+require_once __DIR__ . '/session-helpers.php';
 
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'error' => 'Необхідно авторизуватися']);
-    exit;
-}
-
-$data = json_decode(file_get_contents('php://input'), true);
+$userId = requireJsonAuth();
+$data = getJsonInput();
 
 if (!isset($data['session_id'])) {
     echo json_encode(['success' => false, 'error' => 'Відсутній ID сесії']);
@@ -19,7 +15,7 @@ if (!isset($data['session_id'])) {
 }
 
 $db = Database::getInstance();
-$sessionId = $data['session_id'];
+$sessionId = requireUserSession($db, $data['session_id'], $userId);
 
 // Розрахунок статистики
 $stats = $db->fetchOne(
@@ -37,7 +33,7 @@ $db->update('training_sessions', [
     'max_hr' => $stats['max_hr'] ?? 0,
     'calories_burned' => $data['calories_burned'] ?? 0,
     'notes' => $data['notes'] ?? ''
-], 'id = :id', ['id' => $sessionId]);
+], 'id = :id AND user_id = :user_id', ['id' => $sessionId, 'user_id' => $userId]);
 
 echo json_encode([
     'success' => true,

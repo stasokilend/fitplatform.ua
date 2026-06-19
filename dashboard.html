@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кабінет – FitPlatform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Навігація -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="dashboard.html"><i class="fas fa-heartbeat me-2"></i>FitPlatform</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="dashboard.html"><i class="fas fa-home"></i> Кабінет</a></li>
+                    <li class="nav-item"><a class="nav-link" href="stats.html"><i class="fas fa-chart-line"></i> Статистика</a></li>
+                    <li class="nav-item" id="adminNavItem" style="display:none;">
+                        <a class="nav-link" href="admin/index.html"><i class="fas fa-cog"></i> Адмін-панель</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Вихід</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="row">
+            <!-- Ліва колонка: Профіль -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>Мій профіль</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="profileInfo">
+                            <p><strong>Ім'я:</strong> <span id="displayName">-</span></p>
+                            <p><strong>Email:</strong> <span id="displayEmail">-</span></p>
+                            <p><strong>Вік:</strong> <span id="displayAge">-</span> років</p>
+                            <p><strong>Вага:</strong> <span id="displayWeight">-</span> кг</p>
+                            <p><strong>Зріст:</strong> <span id="displayHeight">-</span> см</p>
+                            <p><strong>Стать:</strong> <span id="displayGender">-</span></p>
+                            <p><strong>Рівень:</strong> <span id="displayLevel">-</span></p>
+                            <p><strong>BMR (базовий обмін):</strong> <span id="displayBmr">-</span> ккал</p>
+                        </div>
+
+                        <div id="toastContainer" class="toast-container"></div>
+
+                        <!-- У картці профілю забираємо кнопку "Редагувати" і колапс, додаємо кнопку "Редагувати профіль" з посиланням на profile-setup.html -->
+                        <div class="card-body">
+                            <div id="profileInfo">
+                                <!-- ... ті ж поля ... -->
+                            </div>
+                            <a href="profile-setup.html" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fas fa-edit me-2"></i>Редагувати профіль
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Генерація тренування -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-play me-2"></i>Тренування</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <button id="generateWorkoutBtn" class="btn btn-success btn-lg w-100 mb-2">
+                            <i class="fas fa-sync me-2"></i>Згенерувати план
+                        </button>
+                        <div id="generationStatus" class="small text-muted"></div>
+                        <div id="generatedPlan" class="mt-3"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Права колонка: Поточний план -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Поточний план тренування</h5>
+                    </div>
+                    <div class="card-body" id="currentPlanContainer">
+                        <div class="text-center text-muted py-5">
+                            <i class="fas fa-dumbbell fa-3x mb-3"></i>
+                            <p>Натисніть "Згенерувати план", щоб створити персоналізоване тренування</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/workout.js"></script>
+</body>
+</html>

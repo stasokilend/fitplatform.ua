@@ -7,111 +7,94 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        .settings-section {
-            border: 1px solid #e9ecef;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            background: white;
-        }
-        .settings-section h5 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-        }
-        .settings-section .form-label {
-            font-weight: 500;
-        }
-        .avatar-circle {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: white;
-            font-weight: bold;
-            margin: 0 auto 15px;
-        }
-    </style>
 </head>
 <body>
-    <!-- Навігація завантажиться автоматично -->
+    <!-- Навігація -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="dashboard.php"><i class="fas fa-heartbeat me-2"></i>FitPlatform</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="dashboard.php"><i class="fas fa-home"></i> Кабінет</a></li>
+                    <li class="nav-item"><a class="nav-link" href="stats.php"><i class="fas fa-chart-line"></i> Статистика</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="settings.php"><i class="fas fa-cog"></i> Налаштування</a></li>
+                    <li class="nav-item" id="adminNavItem" style="display:none;"><a class="nav-link" href="admin/index.php"><i class="fas fa-shield-alt"></i> Адмін</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Вихід</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
     <div class="container py-4">
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
                 <h2 class="mb-4"><i class="fas fa-cog text-primary me-2"></i>Налаштування аккаунта</h2>
 
-                <!-- Аватар та основна інформація -->
-                <div class="settings-section text-center">
-                    <div class="avatar-circle" id="userAvatar">U</div>
-                    <h4 id="userNameDisplay">Користувач</h4>
-                    <p class="text-muted" id="userEmailDisplay">email@example.com</p>
-                    <span class="badge bg-secondary" id="userRoleDisplay">Користувач</span>
-                </div>
-
-                <!-- Основні налаштування -->
-                <div class="settings-section">
-                    <h5><i class="fas fa-user me-2"></i>Основні дані</h5>
-                    <form id="settingsForm">
-                        <div class="mb-3">
-                            <label for="settingsName" class="form-label">Повне ім'я</label>
-                            <input type="text" class="form-control" id="settingsName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="settingsEmail" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="settingsEmail" required>
-                        </div>
-                        <div id="settingsError" class="alert alert-danger d-none"></div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save me-2"></i>Зберегти зміни
-                        </button>
-                    </form>
+                <!-- Особисті дані -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>Особисті дані</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="accountForm">
+                            <div class="mb-3">
+                                <label for="settingsName" class="form-label">Повне ім'я</label>
+                                <input type="text" class="form-control" id="settingsName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="settingsEmail" class="form-label">Email</label>
+                                <input type="email" class="form-control" id="settingsEmail" required>
+                            </div>
+                            <div id="accountError" class="alert alert-danger d-none"></div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Зберегти зміни
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- Зміна пароля -->
-                <div class="settings-section">
-                    <h5><i class="fas fa-key me-2"></i>Зміна пароля</h5>
-                    <form id="passwordForm">
-                        <div class="mb-3">
-                            <label for="currentPassword" class="form-label">Поточний пароль</label>
-                            <input type="password" class="form-control" id="currentPassword" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newPassword" class="form-label">Новий пароль</label>
-                            <input type="password" class="form-control" id="newPassword" required minlength="6">
-                            <small class="text-muted">Мінімум 6 символів</small>
-                        </div>
-                        <div class="mb-3">
-                            <label for="confirmPassword" class="form-label">Підтвердження пароля</label>
-                            <input type="password" class="form-control" id="confirmPassword" required>
-                        </div>
-                        <div id="passwordError" class="alert alert-danger d-none"></div>
-                        <button type="submit" class="btn btn-warning">
-                            <i class="fas fa-exchange-alt me-2"></i>Змінити пароль
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Додаткові налаштування -->
-                <div class="settings-section">
-                    <h5><i class="fas fa-dumbbell me-2"></i>Налаштування тренувань</h5>
-                    <a href="profile-setup.html" class="btn btn-outline-primary">
-                        <i class="fas fa-edit me-2"></i>Редагувати профіль тренувань
-                    </a>
-                    <span class="text-muted ms-3 small">(вага, зріст, цілі, обмеження)</span>
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-key me-2"></i>Зміна пароля</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="passwordForm">
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">Поточний пароль</label>
+                                <input type="password" class="form-control" id="currentPassword" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">Новий пароль</label>
+                                <input type="password" class="form-control" id="newPassword" required minlength="6">
+                                <small class="text-muted">Мінімум 6 символів</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">Підтвердіть новий пароль</label>
+                                <input type="password" class="form-control" id="confirmPassword" required>
+                            </div>
+                            <div id="passwordError" class="alert alert-danger d-none"></div>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-key me-2"></i>Змінити пароль
+                            </button>
+                        </form>
+                    </div>
                 </div>
 
                 <!-- Небезпечна зона -->
-                <div class="settings-section border-danger">
-                    <h5 class="text-danger"><i class="fas fa-exclamation-triangle me-2"></i>Небезпечна зона</h5>
-                    <p class="text-muted small">Ці дії незворотні. Будьте обережні.</p>
-                    <button class="btn btn-outline-danger" id="deleteAccountBtn">
-                        <i class="fas fa-trash me-2"></i>Видалити аккаунт
-                    </button>
+                <div class="card shadow-sm border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Небезпечна зона</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Видалення аккаунта призведе до втрати всіх даних. Цю дію не можна скасувати.</p>
+                        <button class="btn btn-danger" id="deleteAccountBtn">
+                            <i class="fas fa-trash me-2"></i>Видалити аккаунт
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

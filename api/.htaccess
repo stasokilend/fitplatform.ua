@@ -1,4 +1,7 @@
-# api/.htaccess
-Header set Access-Control-Allow-Origin "*"
-Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE"
-Header set Access-Control-Allow-Headers "Content-Type"
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)\.html$ $1.php [L]
+
+# Перенаправлення з .html на .php для старих посилань
+RewriteRule ^(.*)\.html$ $1.php [R=301,L]

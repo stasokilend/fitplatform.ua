@@ -1,18 +1,17 @@
-// js/settings.js - Логіка сторінки налаштувань
+// js/settings.js
 
 document.addEventListener('DOMContentLoaded', function() {
-    loadNav().then(() => {
-        updateNavVisibility();
-        loadUserData();
-    });
+    // Завантаження даних користувача
+    loadUserData();
 
-    // Основні налаштування
-    const settingsForm = document.getElementById('settingsForm');
-    if (settingsForm) {
-        settingsForm.addEventListener('submit', async function(e) {
+    // Форма особистих даних
+    const accountForm = document.getElementById('accountForm');
+    if (accountForm) {
+        accountForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const btn = this.querySelector('button[type="submit"]');
-            const errorDiv = document.getElementById('settingsError');
+            const errorDiv = document.getElementById('accountError');
+            errorDiv.classList.add('d-none');
 
             const full_name = document.getElementById('settingsName').value.trim();
             const email = document.getElementById('settingsEmail').value.trim();
@@ -20,78 +19,75 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!full_name) {
                 errorDiv.classList.remove('d-none');
                 errorDiv.textContent = 'Введіть ім\'я';
-                showToast('Введіть ім\'я', 'error');
                 return;
             }
             if (!email) {
                 errorDiv.classList.remove('d-none');
                 errorDiv.textContent = 'Введіть email';
-                showToast('Введіть email', 'error');
                 return;
             }
 
-            errorDiv.classList.add('d-none');
             disableButton(btn, 'Збереження...');
-
-            const result = await apiRequest('update-user.php', 'POST', { full_name, email });
+            const result = await apiRequest('update-account.php', 'POST', { full_name, email });
 
             if (result.success) {
                 showToast('Дані оновлено!', 'success');
                 loadUserData();
-                enableButton(btn);
             } else {
-                enableButton(btn);
                 errorDiv.classList.remove('d-none');
                 errorDiv.textContent = result.error || 'Помилка';
                 showToast(result.error || 'Помилка', 'error');
             }
+            enableButton(btn);
         });
     }
 
-    // Зміна пароля
+    // Форма зміни пароля
     const passwordForm = document.getElementById('passwordForm');
     if (passwordForm) {
         passwordForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             const btn = this.querySelector('button[type="submit"]');
             const errorDiv = document.getElementById('passwordError');
+            errorDiv.classList.add('d-none');
 
-            const current_password = document.getElementById('currentPassword').value;
-            const new_password = document.getElementById('newPassword').value;
-            const confirm_password = document.getElementById('confirmPassword').value;
+            const current = document.getElementById('currentPassword').value;
+            const newPass = document.getElementById('newPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
 
-            if (new_password.length < 6) {
+            if (!current || !newPass || !confirm) {
+                errorDiv.classList.remove('d-none');
+                errorDiv.textContent = 'Заповніть всі поля';
+                return;
+            }
+            if (newPass.length < 6) {
                 errorDiv.classList.remove('d-none');
                 errorDiv.textContent = 'Новий пароль має бути не менше 6 символів';
-                showToast('Новий пароль має бути не менше 6 символів', 'error');
                 return;
             }
-            if (new_password !== confirm_password) {
+            if (newPass !== confirm) {
                 errorDiv.classList.remove('d-none');
                 errorDiv.textContent = 'Паролі не співпадають';
-                showToast('Паролі не співпадають', 'error');
                 return;
             }
 
-            errorDiv.classList.add('d-none');
-            disableButton(btn, 'Зміна пароля...');
-
+            disableButton(btn, 'Зміна...');
             const result = await apiRequest('change-password.php', 'POST', {
-                current_password,
-                new_password,
-                confirm_password
+                current_password: current,
+                new_password: newPass
             });
 
             if (result.success) {
                 showToast('Пароль змінено!', 'success');
-                passwordForm.reset();
-                enableButton(btn);
+                document.getElementById('currentPassword').value = '';
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmPassword').value = '';
             } else {
-                enableButton(btn);
                 errorDiv.classList.remove('d-none');
                 errorDiv.textContent = result.error || 'Помилка';
                 showToast(result.error || 'Помилка', 'error');
             }
+            enableButton(btn);
         });
     }
 
@@ -99,8 +95,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteBtn = document.getElementById('deleteAccountBtn');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', function() {
-            if (confirm('Ви впевнені, що хочете видалити свій аккаунт? Це незворотна дія!')) {
-                if (confirm('ВСІ ВАШІ ДАНІ БУДУТЬ ВТРАЧЕНІ. Продовжити?')) {
+            if (confirm('Ви впевнені, що хочете видалити аккаунт? Цю дію не можна скасувати!')) {
+                if (confirm('ОСТАННЄ ПОПЕРЕДЖЕННЯ: Всі дані будуть втрачені. Видалити?')) {
                     deleteAccount();
                 }
             }
@@ -110,31 +106,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadUserData() {
     const result = await apiRequest('profile.php', 'GET');
-    if (!result.success || !result.profile) {
-        showToast('Помилка завантаження даних', 'error');
-        return;
+    if (result.success && result.profile) {
+        const p = result.profile;
+        document.getElementById('settingsName').value = p.full_name || '';
+        document.getElementById('settingsEmail').value = p.email || '';
     }
-
-    const profile = result.profile;
-
-    document.getElementById('settingsName').value = profile.full_name || '';
-    document.getElementById('settingsEmail').value = profile.email || '';
-    document.getElementById('userNameDisplay').textContent = profile.full_name || 'Користувач';
-    document.getElementById('userEmailDisplay').textContent = profile.email || 'email@example.com';
-    
-    const avatar = document.getElementById('userAvatar');
-    avatar.textContent = profile.full_name ? profile.full_name.charAt(0).toUpperCase() : 'U';
-
-    const roleMap = { 'user': 'Користувач', 'trainer': 'Тренер', 'admin': 'Адміністратор' };
-    document.getElementById('userRoleDisplay').textContent = roleMap[profile.role] || 'Користувач';
 }
 
 async function deleteAccount() {
     const result = await apiRequest('delete-account.php', 'POST');
     if (result.success) {
-        showToast('Аккаунт видалено', 'success');
-        setTimeout(() => window.location.href = 'index.html', 1500);
+        showToast('Аккаунт видалено', 'info');
+        setTimeout(() => window.location.href = 'register.html', 1500);
     } else {
-        showToast(result.error || 'Помилка видалення', 'error');
+        showToast(result.error || 'Помилка', 'error');
     }
 }

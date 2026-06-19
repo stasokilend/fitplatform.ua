@@ -150,3 +150,7 @@ ALTER TABLE user_profiles ADD COLUMN profile_completed TINYINT(1) DEFAULT 0 AFTE
 
 -- Обновление существующих записей (если профиль заполнен)
 UPDATE user_profiles SET profile_completed = 1 WHERE age IS NOT NULL AND weight IS NOT NULL;
+
+-- Создание админа (пароль: admin123)
+INSERT INTO users (email, password_hash, full_name, role, is_active) 
+VALUES ('admin@fitplatform.ua', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Адміністратор', 'admin', 1);

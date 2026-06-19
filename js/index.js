@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', function(e) {
                     e.preventDefault();
-                    logout('index.html');
+                    logout('index.php');
                 });
             }
 

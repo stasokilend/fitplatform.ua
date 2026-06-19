@@ -12,10 +12,10 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="dashboard.html"><i class="fas fa-heartbeat me-2"></i>FitPlatform</a>
+            <a class="navbar-brand" href="dashboard.php"><i class="fas fa-heartbeat me-2"></i>FitPlatform</a>
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="dashboard.html"><i class="fas fa-home"></i> Кабінет</a></li>
-                <li class="nav-item"><a class="nav-link active" href="stats.html"><i class="fas fa-chart-line"></i> Статистика</a></li>
+                <li class="nav-item"><a class="nav-link" href="dashboard.php"><i class="fas fa-home"></i> Кабінет</a></li>
+                <li class="nav-item"><a class="nav-link active" href="stats.php"><i class="fas fa-chart-line"></i> Статистика</a></li>
                 <li class="nav-item"><a class="nav-link" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Вихід</a></li>
             </ul>
         </div>

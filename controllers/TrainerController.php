@@ -282,31 +282,37 @@ class TrainerController {
     }
     
     /**
-     * Изменение роли обычного пользователя на тренера
-     */
-    public function switchToTrainer() {
-        try {
-            $stmt = $this->pdo->prepare("SELECT role FROM users WHERE id = ?");
-            $stmt->execute([$this->trainerId]);
-            $user = $stmt->fetch();
-            
-            if ($user['role'] === 'trainer') {
-                return ['success' => false, 'error' => 'Ви вже є тренером'];
-            }
-            
-            $stmt = $this->pdo->prepare("UPDATE users SET role = 'trainer' WHERE id = ?");
-            $success = $stmt->execute([$this->trainerId]);
-            
-            if ($success) {
-                $_SESSION['user_role'] = 'trainer';
-                return ['success' => true];
-            }
-            
-            return ['success' => false, 'error' => 'Помилка зміни ролі'];
-        } catch (Exception $e) {
-            return ['success' => false, 'error' => 'Помилка: ' . $e->getMessage()];
+ * Изменение роли обычного пользователя на тренера
+ */
+public function switchToTrainer() {
+    try {
+        // Проверяем, не является ли уже тренером
+        $stmt = $this->pdo->prepare("SELECT role FROM users WHERE id = ?");
+        $stmt->execute([$this->trainerId]);
+        $user = $stmt->fetch();
+        
+        if ($user['role'] === 'trainer') {
+            return ['success' => false, 'error' => 'Ви вже є тренером'];
         }
+        
+        // Меняем роль
+        $stmt = $this->pdo->prepare("
+            UPDATE users SET role = 'trainer' WHERE id = ?
+        ");
+        $success = $stmt->execute([$this->trainerId]);
+        
+        if ($success) {
+            // Обновляем сессию
+            $_SESSION['user_role'] = 'trainer';
+            return ['success' => true];
+        }
+        
+        return ['success' => false, 'error' => 'Помилка зміни ролі'];
+        
+    } catch (Exception $e) {
+        return ['success' => false, 'error' => 'Помилка: ' . $e->getMessage()];
     }
+}
     
     public function getActiveClientsCount() {
         $stmt = $this->pdo->prepare("

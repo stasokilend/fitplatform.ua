@@ -19,6 +19,64 @@ $userId = $_SESSION['user_id'];
 $trainer = new TrainerController($userId);
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
+// --- ПЕРЕКЛЮЧЕНИЕ НА ПОЛЬЗОВАТЕЛЯ ---
+if ($action === 'switch_to_user') {
+    // Проверяем, что пользователь - тренер
+    if ($_SESSION['user_role'] !== 'trainer') {
+        echo json_encode(['success' => false, 'error' => 'Ви вже є звичайним користувачем']);
+        exit;
+    }
+    
+    $result = $trainer->switchToUser();
+    
+    if ($result['success']) {
+        $_SESSION['user_role'] = 'user';
+        global $pdo;
+        $stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+        if ($user) {
+            $_SESSION['user_name'] = $user['full_name'];
+        }
+        echo json_encode(['success' => true, 'redirect' => '/dashboard.php?page=settings&tab=role']);
+    } else {
+        echo json_encode($result);
+    }
+    exit;
+}
+
+// --- ПЕРЕКЛЮЧЕНИЕ НА ТРЕНЕРА ---
+if ($action === 'switch_to_trainer') {
+    // Проверяем, что пользователь не тренер
+    if ($_SESSION['user_role'] === 'trainer') {
+        echo json_encode(['success' => false, 'error' => 'Ви вже є тренером']);
+        exit;
+    }
+    
+    $result = $trainer->switchToTrainer();
+    
+    if ($result['success']) {
+        $_SESSION['user_role'] = 'trainer';
+        global $pdo;
+        $stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+        if ($user) {
+            $_SESSION['user_name'] = $user['full_name'];
+        }
+        echo json_encode(['success' => true, 'redirect' => '/dashboard.php?page=settings&tab=role']);
+    } else {
+        echo json_encode($result);
+    }
+    exit;
+}
+
+// --- ОСТАЛЬНЫЕ ЭНДПОИНТЫ (требуют роль тренера) ---
+if ($_SESSION['user_role'] !== 'trainer' && $_SESSION['user_role'] !== 'admin') {
+    echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
+    exit;
+}
+
 // --- ПОЛУЧЕНИЕ СТАТИСТИКИ ---
 if ($action === 'stats') {
     $stats = $trainer->getStats();
@@ -158,8 +216,8 @@ if ($action === 'add_client') {
     ");
     $success = $stmt->execute([$userId, $clientId, $notes]);
     
-    // Создаем чат при добавлении клиента
     if ($success) {
+        require_once __DIR__ . '/../controllers/ChatController.php';
         $chat = new ChatController($userId);
         $chat->getOrCreateChat($clientId);
     }
@@ -189,56 +247,6 @@ if ($action === 'delete_program') {
     $success = $stmt->execute([$programId, $userId]);
     
     echo json_encode(['success' => $success]);
-    exit;
-}
-
-// --- ПЕРЕКЛЮЧЕНИЕ НА ПОЛЬЗОВАТЕЛЯ ---
-if ($action === 'switch_to_user') {
-    if ($_SESSION['user_role'] !== 'trainer') {
-        echo json_encode(['success' => false, 'error' => 'Ви вже є звичайним користувачем']);
-        exit;
-    }
-    
-    $result = $trainer->switchToUser();
-    
-    if ($result['success']) {
-        $_SESSION['user_role'] = 'user';
-        global $pdo;
-        $stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
-        $stmt->execute([$userId]);
-        $user = $stmt->fetch();
-        if ($user) {
-            $_SESSION['user_name'] = $user['full_name'];
-        }
-        echo json_encode(['success' => true, 'redirect' => '/dashboard.php?page=settings&tab=role']);
-    } else {
-        echo json_encode($result);
-    }
-    exit;
-}
-
-// --- ПЕРЕКЛЮЧЕНИЕ НА ТРЕНЕРА ---
-if ($action === 'switch_to_trainer') {
-    if ($_SESSION['user_role'] === 'trainer') {
-        echo json_encode(['success' => false, 'error' => 'Ви вже є тренером']);
-        exit;
-    }
-    
-    $result = $trainer->switchToTrainer();
-    
-    if ($result['success']) {
-        $_SESSION['user_role'] = 'trainer';
-        global $pdo;
-        $stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
-        $stmt->execute([$userId]);
-        $user = $stmt->fetch();
-        if ($user) {
-            $_SESSION['user_name'] = $user['full_name'];
-        }
-        echo json_encode(['success' => true, 'redirect' => '/dashboard.php?page=settings&tab=role']);
-    } else {
-        echo json_encode($result);
-    }
     exit;
 }
 

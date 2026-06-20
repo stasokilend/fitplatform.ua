@@ -47,5 +47,39 @@ if ($action === 'update_workout') {
     exit;
 }
 
+// --- РАЗБЛОКИРОВКА ДОСТИЖЕНИЯ ---
+if ($action === 'unlock') {
+    $achievementCode = $_POST['code'] ?? '';
+    
+    if (!$achievementCode) {
+        echo json_encode(['success' => false, 'error' => 'Код не вказано']);
+        exit;
+    }
+    
+    $result = $gamification->unlockAchievement($achievementCode);
+    
+    if ($result) {
+        // Получаем детали достижения для уведомления
+        $stmt = $pdo->prepare("SELECT * FROM achievements WHERE code = ?");
+        $stmt->execute([$achievementCode]);
+        $achievement = $stmt->fetch();
+        
+        // Создаем уведомление
+        require_once __DIR__ . '/../controllers/NotificationController.php';
+        $notification = new NotificationController($userId);
+        $notification->createFromTemplate('achievement_unlocked', [
+            'achievement_name' => $achievement['name']
+        ]);
+        
+        echo json_encode([
+            'success' => true,
+            'achievement' => $achievement
+        ]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Помилка розблокування']);
+    }
+    exit;
+}
+
 echo json_encode(['success' => false, 'error' => 'Невідома дія']);
 ?>

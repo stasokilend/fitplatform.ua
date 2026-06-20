@@ -192,6 +192,23 @@ class GamificationController {
             $this->updateProgress($achievement['code'], $current);
         }
     }
+    /**
+ * Получение достижений по категориям
+ */
+public function getAchievementsByCategory() {
+    $achievements = $this->getUserAchievements();
+    $categories = [];
+    
+    foreach ($achievements as $ach) {
+        $cat = $ach['category'] ?? 'other';
+        if (!isset($categories[$cat])) {
+            $categories[$cat] = [];
+        }
+        $categories[$cat][] = $ach;
+    }
+    
+    return $categories;
+}
     
     /**
      * Получение текущего прогресса для достижения
@@ -343,25 +360,62 @@ class GamificationController {
         ];
     }
     
+/**
+ * Получение последних разблокированных достижений с деталями
+ */
+public function getRecentAchievements($limit = 5) {
+    $limit = (int)$limit;
+    
+    $stmt = $this->pdo->prepare("
+        SELECT 
+            a.*,
+            ua.unlocked_at,
+            ua.progress,
+            ua.is_completed
+        FROM user_achievements ua
+        JOIN achievements a ON ua.achievement_id = a.id
+        WHERE ua.user_id = ? AND ua.is_completed = 1
+        ORDER BY ua.unlocked_at DESC
+        LIMIT " . $limit . "
+    ");
+    $stmt->execute([$this->userId]);
+    return $stmt->fetchAll();
+}
     /**
-     * Получение последних разблокированных достижений
-     * ИСПРАВЛЕНО: LIMIT вставляется напрямую
-     */
-    public function getRecentAchievements($limit = 5) {
-        $limit = (int)$limit;
-        
-        $stmt = $this->pdo->prepare("
-            SELECT 
-                a.*,
-                ua.unlocked_at
-            FROM user_achievements ua
-            JOIN achievements a ON ua.achievement_id = a.id
-            WHERE ua.user_id = ? AND ua.is_completed = 1
-            ORDER BY ua.unlocked_at DESC
-            LIMIT " . $limit . "
-        ");
-        $stmt->execute([$this->userId]);
-        return $stmt->fetchAll();
+ * Получение статистики достижений для дашборда
+ */
+public function getAchievementSummary() {
+    $achievements = $this->getUserAchievements();
+    
+    $total = count($achievements);
+    $completed = 0;
+    $byRarity = [
+        'common' => ['total' => 0, 'completed' => 0],
+        'uncommon' => ['total' => 0, 'completed' => 0],
+        'rare' => ['total' => 0, 'completed' => 0],
+        'epic' => ['total' => 0, 'completed' => 0],
+        'legendary' => ['total' => 0, 'completed' => 0]
+    ];
+    
+    foreach ($achievements as $ach) {
+        $rarity = $ach['rarity'] ?? 'common';
+        if (isset($byRarity[$rarity])) {
+            $byRarity[$rarity]['total']++;
+            if ($ach['is_completed']) {
+                $byRarity[$rarity]['completed']++;
+                $completed++;
+            }
+        }
     }
+    
+    return [
+        'total' => $total,
+        'completed' => $completed,
+        'by_rarity' => $byRarity,
+        'completion_percent' => $total > 0 ? round(($completed / $total) * 100) : 0
+    ];
+
+}   
+
 }
 ?>

@@ -6,30 +6,22 @@ function updateProfile($userId, $data) {
     global $pdo;
     
     try {
-        // Проверяем существование записи
         $stmt = $pdo->prepare("SELECT user_id FROM user_profiles WHERE user_id = ?");
         $stmt->execute([$userId]);
         $exists = $stmt->fetch();
         
+        // Если есть goal_weights, сохраняем их
+        $goalWeights = $data['goal_weights'] ?? null;
+        
         if ($exists) {
-            // Обновляем существующую запись
-            $stmt = $pdo->prepare("
+            $sql = "
                 UPDATE user_profiles 
-                SET 
-                    age = ?,
-                    weight = ?,
-                    height = ?,
-                    gender = ?,
-                    fitness_level = ?,
-                    goal_type = ?,
-                    target_weight = ?,
-                    medical_notes = ?,
-                    profile_completed = 1,
+                SET age = ?, weight = ?, height = ?, gender = ?, 
+                    fitness_level = ?, goal_type = ?, target_weight = ?,
+                    medical_notes = ?, profile_completed = 1,
                     updated_at = NOW()
-                WHERE user_id = ?
-            ");
-            
-            return $stmt->execute([
+            ";
+            $params = [
                 $data['age'] ?? null,
                 $data['weight'] ?? null,
                 $data['height'] ?? null,
@@ -37,19 +29,28 @@ function updateProfile($userId, $data) {
                 $data['fitness_level'] ?? 'beginner',
                 $data['goal_type'] ?? 'health',
                 $data['target_weight'] ?? null,
-                $data['medical_notes'] ?? null,
-                $userId
-            ]);
+                $data['medical_notes'] ?? null
+            ];
+            
+            // Добавляем goal_weights если есть
+            if ($goalWeights) {
+                $sql .= ", goal_weights = ?";
+                $params[] = $goalWeights;
+            }
+            
+            $sql .= " WHERE user_id = ?";
+            $params[] = $userId;
+            
+            $stmt = $pdo->prepare($sql);
+            return $stmt->execute($params);
         } else {
-            // Создаем новую запись
-            $stmt = $pdo->prepare("
+            $sql = "
                 INSERT INTO user_profiles (
                     user_id, age, weight, height, gender, 
                     fitness_level, goal_type, target_weight, 
-                    medical_notes, profile_completed
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-            ");
-            
+                    medical_notes, profile_completed, goal_weights
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+            ";
             return $stmt->execute([
                 $userId,
                 $data['age'] ?? null,
@@ -59,7 +60,8 @@ function updateProfile($userId, $data) {
                 $data['fitness_level'] ?? 'beginner',
                 $data['goal_type'] ?? 'health',
                 $data['target_weight'] ?? null,
-                $data['medical_notes'] ?? null
+                $data['medical_notes'] ?? null,
+                $goalWeights
             ]);
         }
     } catch (PDOException $e) {

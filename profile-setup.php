@@ -438,51 +438,58 @@ $pageTitle = 'Заповнення профілю';
         <div class="form-section" data-section="2">
             <div class="section-title"><i class="bi bi-bullseye text-primary"></i> Ваші цілі</div>
             <div class="section-subtitle">Оберіть основну мету тренувань</div>
-            <div class="row g-3 mb-4">
-                <div class="col-md-3 col-6">
-                    <div class="goal-card <?php echo ($profile['goal_type'] ?? '') === 'weight_loss' ? 'selected' : ''; ?>" data-goal="weight_loss">
-                        <span class="goal-icon">🔥</span>
-                        <div class="goal-name">Зниження ваги</div>
-                        <div class="goal-desc">Спалити жир</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="goal-card <?php echo ($profile['goal_type'] ?? '') === 'muscle_gain' ? 'selected' : ''; ?>" data-goal="muscle_gain">
-                        <span class="goal-icon">💪</span>
-                        <div class="goal-name">Набір маси</div>
-                        <div class="goal-desc">М'язова гіпертрофія</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="goal-card <?php echo ($profile['goal_type'] ?? '') === 'endurance' ? 'selected' : ''; ?>" data-goal="endurance">
-                        <span class="goal-icon">🏃</span>
-                        <div class="goal-name">Витривалість</div>
-                        <div class="goal-desc">Кардіо та витривалість</div>
-                    </div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="goal-card <?php echo ($profile['goal_type'] ?? '') === 'health' ? 'selected' : ''; ?>" data-goal="health">
-                        <span class="goal-icon">❤️</span>
-                        <div class="goal-name">Здоров'я</div>
-                        <div class="goal-desc">Загальний тонус</div>
-                    </div>
-                </div>
-            </div>
-            <input type="hidden" name="goal_type" id="goalType" value="<?php echo $profile['goal_type'] ?? 'health'; ?>">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Цільова вага (кг) <span class="text-muted">(опціонально)</span></label>
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="bi bi-bullseye"></i></span>
-                        <input type="number" name="target_weight" class="form-control" value="<?php echo $profile['target_weight'] ?? ''; ?>" step="0.1" min="20" max="300" placeholder="Бажана вага">
-                    </div>
-                </div>
-            </div>
-            <div class="d-flex justify-content-between mt-4">
-                <button type="button" class="btn btn-outline-secondary-custom" onclick="prevStep()"><i class="bi bi-arrow-left me-2"></i> Назад</button>
-                <button type="button" class="btn btn-primary-gradient" onclick="nextStep()">Далі <i class="bi bi-arrow-right ms-2"></i></button>
-            </div>
+            <!-- Вместо goal cards, добавляем слайдеры -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">
+            <i class="bi bi-fire text-danger"></i> Зниження ваги
+        </label>
+        <input type="range" class="form-range goal-slider" id="goal_weight_loss" 
+               min="0" max="100" value="0" step="5">
+        <div class="d-flex justify-content-between small text-muted">
+            <span>Не важливо</span>
+            <span id="goal_weight_loss_label">0%</span>
+            <span>Дуже важливо</span>
         </div>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">
+            <i class="bi bi-dumbbell text-primary"></i> Набір м'язової маси
+        </label>
+        <input type="range" class="form-range goal-slider" id="goal_muscle_gain" 
+               min="0" max="100" value="0" step="5">
+        <div class="d-flex justify-content-between small text-muted">
+            <span>Не важливо</span>
+            <span id="goal_muscle_gain_label">0%</span>
+            <span>Дуже важливо</span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">
+            <i class="bi bi-arrow-repeat text-success"></i> Витривалість
+        </label>
+        <input type="range" class="form-range goal-slider" id="goal_endurance" 
+               min="0" max="100" value="0" step="5">
+        <div class="d-flex justify-content-between small text-muted">
+            <span>Не важливо</span>
+            <span id="goal_endurance_label">0%</span>
+            <span>Дуже важливо</span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label fw-semibold">
+            <i class="bi bi-heart-pulse text-info"></i> Загальне здоров'я
+        </label>
+        <input type="range" class="form-range goal-slider" id="goal_health" 
+               min="0" max="100" value="0" step="5">
+        <div class="d-flex justify-content-between small text-muted">
+            <span>Не важливо</span>
+            <span id="goal_health_label">0%</span>
+            <span>Дуже важливо</span>
+        </div>
+    </div>
+</div>
+<input type="hidden" name="goal_weights" id="goalWeightsInput" value='{"weight_loss":0,"muscle_gain":0,"endurance":0,"health":0}'>
 
         <!-- Step 2.5: Role Selection -->
         <div class="form-section" data-section="2_5">
@@ -707,6 +714,24 @@ function showToast(message, type = 'info') {
     toast.innerHTML = `<div class="d-flex align-items-center"><i class="bi bi-${type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2"></i><span>${message}</span><button type="button" class="btn-close ms-3" onclick="this.parentElement.parentElement.remove()"></button></div>`;
     document.body.appendChild(toast);
     setTimeout(() => { if (toast.parentElement) { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); } }, 4000);
+}
+// Обновление слайдеров
+document.querySelectorAll('.goal-slider').forEach(function(slider) {
+    slider.addEventListener('input', function() {
+        const label = document.getElementById(this.id + '_label');
+        if (label) label.textContent = this.value + '%';
+        updateGoalWeights();
+    });
+});
+
+function updateGoalWeights() {
+    const weights = {
+        weight_loss: parseInt(document.getElementById('goal_weight_loss').value) / 100,
+        muscle_gain: parseInt(document.getElementById('goal_muscle_gain').value) / 100,
+        endurance: parseInt(document.getElementById('goal_endurance').value) / 100,
+        health: parseInt(document.getElementById('goal_health').value) / 100
+    };
+    document.getElementById('goalWeightsInput').value = JSON.stringify(weights);
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

@@ -18,7 +18,6 @@ if ($action === 'generate') {
     $focus = $_POST['focus'] ?? null;
     $name = trim($_POST['name'] ?? 'Моє тренування');
     
-    // Генерируем тренировку
     $result = createWorkoutFromGeneration($userId, $name, $duration, $focus);
     
     echo json_encode($result);
@@ -35,7 +34,6 @@ if ($action === 'save') {
         exit;
     }
     
-    // Проверяем, что план принадлежит пользователю
     global $pdo;
     $stmt = $pdo->prepare("SELECT id FROM workout_plans WHERE id = ? AND user_id = ?");
     $stmt->execute([$planId, $userId]);
@@ -44,7 +42,6 @@ if ($action === 'save') {
         exit;
     }
     
-    // Обновляем название
     $stmt = $pdo->prepare("UPDATE workout_plans SET name = ? WHERE id = ?");
     $success = $stmt->execute([$name, $planId]);
     

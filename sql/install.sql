@@ -427,3 +427,104 @@ CREATE TABLE IF NOT EXISTS trainer_notification_settings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (trainer_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+-- Добавляем новые поля в workout_plans
+ALTER TABLE workout_plans 
+ADD COLUMN difficulty ENUM('beginner', 'intermediate', 'advanced') DEFAULT 'intermediate',
+ADD COLUMN focus VARCHAR(50) DEFAULT 'general',
+ADD COLUMN calories_burned INT DEFAULT 0,
+ADD COLUMN rating INT DEFAULT 0;
+
+-- Таблица для шаблонов тренировок
+CREATE TABLE workout_templates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    difficulty ENUM('beginner', 'intermediate', 'advanced') DEFAULT 'intermediate',
+    focus VARCHAR(50) DEFAULT 'general',
+    duration_min INT DEFAULT 30,
+    is_public BOOLEAN DEFAULT TRUE,
+    created_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Таблица упражнений в шаблоне
+CREATE TABLE template_exercises (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    template_id INT NOT NULL,
+    exercise_id INT NOT NULL,
+    sets INT DEFAULT 3,
+    reps INT DEFAULT 10,
+    rest_seconds INT DEFAULT 60,
+    order_num INT DEFAULT 0,
+    FOREIGN KEY (template_id) REFERENCES workout_templates(id) ON DELETE CASCADE,
+    FOREIGN KEY (exercise_id) REFERENCES exercises(id)
+);
+
+-- Таблица для заметок к тренировке
+CREATE TABLE workout_notes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    workout_id INT NOT NULL,
+    user_id INT NOT NULL,
+    note TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (workout_id) REFERENCES workout_plans(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Добавляем начальные шаблоны
+INSERT INTO workout_templates (name, description, difficulty, focus, duration_min, is_public) VALUES
+('Силова тренировка для начинающих', 'Базовые упражнения для развития силы', 'beginner', 'strength', 30, 1),
+('Кардио-тренировка', 'Интенсивная кардио-тренировка для сжигания жира', 'intermediate', 'cardio', 25, 1),
+('Функциональный тренинг', 'Развитие выносливости и координации', 'intermediate', 'functional', 35, 1),
+('Тренировка для пресса', 'Комплекс упражнений на мышцы кора', 'beginner', 'core', 20, 1),
+('Продвинутая силовая', 'Интенсивная силовая тренировка', 'advanced', 'strength', 45, 1);
+
+-- Таблица чатов
+CREATE TABLE IF NOT EXISTS chats (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user1_id INT NOT NULL,
+    user2_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_chat (user1_id, user2_id),
+    FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Таблица сообщений
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    chat_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Таблица чатов
+CREATE TABLE IF NOT EXISTS chats (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user1_id INT NOT NULL,
+    user2_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_chat (user1_id, user2_id),
+    FOREIGN KEY (user1_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user2_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Таблица сообщений
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    chat_id INT NOT NULL,
+    sender_id INT NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+);

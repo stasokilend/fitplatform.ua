@@ -140,6 +140,9 @@
                 <a href="/dashboard.php?page=health" class="nav-link <?php echo ($_GET['page'] ?? '') === 'health' ? 'active' : ''; ?>">
                     <i class="bi bi-heart-pulse"></i> Здоров'я
                 </a>
+                <a href="/dashboard.php?page=chat" class="nav-link <?php echo ($_GET['page'] ?? '') === 'chat' ? 'active' : ''; ?>">
+                    <i class="bi bi-chat-dots"></i> Чат
+                </a>
                 <a href="/dashboard.php?page=achievements" class="nav-link <?php echo ($_GET['page'] ?? '') === 'achievements' ? 'active' : ''; ?>">
                     <i class="bi bi-trophy"></i> Досягнення
                 </a>
@@ -150,8 +153,8 @@
                 <a href="/dashboard.php?page=programs" class="nav-link <?php echo ($_GET['page'] ?? '') === 'programs' ? 'active' : ''; ?>">
                     <i class="bi bi-file-text"></i> Програми
                 </a>
-                <a href="/dashboard.php?page=messages" class="nav-link <?php echo ($_GET['page'] ?? '') === 'messages' ? 'active' : ''; ?>">
-                    <i class="bi bi-chat"></i> Повідомлення
+                <a href="/dashboard.php?page=chat" class="nav-link <?php echo ($_GET['page'] ?? '') === 'chat' ? 'active' : ''; ?>">
+                    <i class="bi bi-chat-dots"></i> Чат
                 </a>
                 <a href="/dashboard.php?page=schedule" class="nav-link <?php echo ($_GET['page'] ?? '') === 'schedule' ? 'active' : ''; ?>">
                     <i class="bi bi-calendar"></i> Розклад
@@ -339,4 +342,24 @@
     <script src="/assets/js/charts.js"></script>
     <script src="/assets/js/gamification.js"></script>
 </body>
+<script>
+// Проверка непрочитанных сообщений
+function checkUnreadMessages() {
+    fetch('/api/chat.php?action=unread')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.count > 0) {
+                const badge = document.getElementById('chatBadge');
+                if (badge) {
+                    badge.textContent = data.count > 99 ? '99+' : data.count;
+                    badge.style.display = 'inline';
+                }
+            }
+        });
+}
+
+// Проверяем каждые 30 секунд
+setInterval(checkUnreadMessages, 30000);
+checkUnreadMessages();
+</script>
 </html>

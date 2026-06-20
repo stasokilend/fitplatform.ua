@@ -1,11 +1,17 @@
 <?php
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../controllers/TrainerController.php';
+require_once __DIR__ . '/../controllers/ChatController.php';
 
 header('Content-Type: application/json');
 
 if (!isLoggedIn()) {
     echo json_encode(['success' => false, 'error' => 'Необхідно авторизуватися']);
+    exit;
+}
+
+if ($_SESSION['user_role'] !== 'trainer' && $_SESSION['user_role'] !== 'admin') {
+    echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
     exit;
 }
 
@@ -47,35 +53,6 @@ if ($action === 'client') {
     exit;
 }
 
-// --- ОТПРАВКА СООБЩЕНИЯ ---
-if ($action === 'send_message') {
-    $clientId = (int)($_POST['client_id'] ?? 0);
-    $message = trim($_POST['message'] ?? '');
-    
-    if (!$clientId || !$message) {
-        echo json_encode(['success' => false, 'error' => 'Недостатньо даних']);
-        exit;
-    }
-    
-    $success = $trainer->sendMessage($clientId, $message);
-    echo json_encode(['success' => $success]);
-    exit;
-}
-
-// --- ПОЛУЧЕНИЕ СООБЩЕНИЙ ---
-if ($action === 'messages') {
-    $clientId = (int)($_GET['client_id'] ?? 0);
-    if (!$clientId) {
-        echo json_encode(['success' => false, 'error' => 'ID клієнта не вказано']);
-        exit;
-    }
-    
-    $messages = $trainer->getMessages($clientId);
-    $trainer->markMessagesAsRead($clientId);
-    echo json_encode(['success' => true, 'data' => $messages]);
-    exit;
-}
-
 // --- ПОЛУЧЕНИЕ ПРОГРАММ ---
 if ($action === 'programs') {
     $programs = $trainer->getPrograms();
@@ -101,7 +78,6 @@ if ($action === 'create_program') {
     
     $programId = $trainer->createProgram($data);
     if ($programId) {
-        // Добавляем упражнения если есть
         $exercises = json_decode($_POST['exercises'] ?? '[]', true);
         foreach ($exercises as $ex) {
             $trainer->addExerciseToProgram($programId, $ex['id'], [
@@ -168,7 +144,6 @@ if ($action === 'add_client') {
         exit;
     }
     
-    // Проверяем, не добавлен ли уже
     global $pdo;
     $stmt = $pdo->prepare("SELECT id FROM trainer_clients WHERE trainer_id = ? AND client_id = ?");
     $stmt->execute([$userId, $clientId]);
@@ -182,6 +157,12 @@ if ($action === 'add_client') {
         VALUES (?, ?, ?, 'active', NOW())
     ");
     $success = $stmt->execute([$userId, $clientId, $notes]);
+    
+    // Создаем чат при добавлении клиента
+    if ($success) {
+        $chat = new ChatController($userId);
+        $chat->getOrCreateChat($clientId);
+    }
     
     echo json_encode(['success' => $success]);
     exit;
@@ -213,7 +194,6 @@ if ($action === 'delete_program') {
 
 // --- ПЕРЕКЛЮЧЕНИЕ НА ПОЛЬЗОВАТЕЛЯ ---
 if ($action === 'switch_to_user') {
-    // Проверяем, что пользователь - тренер
     if ($_SESSION['user_role'] !== 'trainer') {
         echo json_encode(['success' => false, 'error' => 'Ви вже є звичайним користувачем']);
         exit;
@@ -221,10 +201,8 @@ if ($action === 'switch_to_user') {
     
     $result = $trainer->switchToUser();
     
-    // Если успешно, обновляем сессию и возвращаем успех
     if ($result['success']) {
         $_SESSION['user_role'] = 'user';
-        // Обновляем имя пользователя в сессии
         global $pdo;
         $stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
         $stmt->execute([$userId]);
@@ -241,7 +219,6 @@ if ($action === 'switch_to_user') {
 
 // --- ПЕРЕКЛЮЧЕНИЕ НА ТРЕНЕРА ---
 if ($action === 'switch_to_trainer') {
-    // Проверяем, что пользователь не тренер
     if ($_SESSION['user_role'] === 'trainer') {
         echo json_encode(['success' => false, 'error' => 'Ви вже є тренером']);
         exit;
@@ -249,7 +226,6 @@ if ($action === 'switch_to_trainer') {
     
     $result = $trainer->switchToTrainer();
     
-    // Если успешно, обновляем сессию
     if ($result['success']) {
         $_SESSION['user_role'] = 'trainer';
         global $pdo;
@@ -294,7 +270,7 @@ if ($action === 'clients_count') {
     exit;
 }
 
-// --- ОБНОВЛЕНИЕ НАСТРОЕК УВЕДОМЛЕНИЙ ТРЕНЕРА ---
+// --- ОБНОВЛЕНИЕ НАСТРОЕК УВЕДОМЛЕНИЙ ---
 if ($action === 'update_notifications') {
     $emailNotifications = isset($_POST['email_notifications']) ? 1 : 0;
     $workoutReminders = isset($_POST['workout_reminders']) ? 1 : 0;

@@ -1411,3 +1411,58 @@ footer a {
     padding-bottom: 0 !important;
 }
 
+/* Фиксированный таймер */
+.timer-fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-top: 2px solid rgba(108, 99, 255, 0.15);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    z-index: 1040;
+    padding: 12px 0;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+}
+
+/* Анимация для таймера */
+.timer-fixed .display-4 {
+    font-family: 'Courier New', monospace;
+    transition: color 0.3s ease;
+}
+
+/* Отступ для контента, чтобы не перекрывался таймером */
+.workout-content {
+    padding-bottom: 120px;
+}
+
+/* Мобильная адаптация */
+@media (max-width: 768px) {
+    .timer-fixed {
+        padding: 8px 0;
+    }
+    .workout-content {
+        padding-bottom: 140px;
+    }
+    .timer-fixed .display-4 {
+        font-size: 1.5rem !important;
+    }
+    .timer-fixed .btn {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+    }
+}
+
+@media (max-width: 576px) {
+    .workout-content {
+        padding-bottom: 180px;
+    }
+    .timer-fixed .btn {
+        font-size: 0.6rem;
+        padding: 3px 8px;
+    }
+    .timer-fixed .display-4 {
+        font-size: 1.2rem !important;
+    }
+}

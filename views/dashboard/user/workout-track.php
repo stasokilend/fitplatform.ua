@@ -28,7 +28,214 @@ $progress = $workout['total_exercises'] > 0
 $isCompleted = $workout['status'] === 'completed';
 ?>
 
-<div class="fade-in-up">
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitPlatform - Тренування</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/assets/css/style.css" rel="stylesheet">
+    <style>
+        /* Фиксированный таймер внизу экрана */
+        .timer-fixed {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+            border-top: 2px solid rgba(108, 99, 255, 0.3);
+            box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.4);
+            z-index: 1040;
+            padding: 12px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .timer-fixed .timer-display {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            font-size: 2.8rem;
+            color: #FFFFFF;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(108, 99, 255, 0.3);
+            transition: color 0.3s ease;
+            line-height: 1;
+        }
+
+        .timer-fixed .timer-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .timer-fixed .btn-timer {
+            border-radius: 50px;
+            padding: 8px 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            border: none;
+            min-width: 100px;
+        }
+
+        .timer-fixed .btn-timer:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .timer-fixed .btn-timer:active {
+            transform: scale(0.95);
+        }
+
+        .timer-fixed .btn-timer-start {
+            background: linear-gradient(135deg, #00D2A0 0%, #00A87E 100%);
+            color: #fff;
+        }
+
+        .timer-fixed .btn-timer-start:hover {
+            box-shadow: 0 4px 20px rgba(0, 210, 160, 0.4);
+        }
+
+        .timer-fixed .btn-timer-pause {
+            background: linear-gradient(135deg, #FFB347 0%, #FF8C00 100%);
+            color: #fff;
+        }
+
+        .timer-fixed .btn-timer-pause:hover {
+            box-shadow: 0 4px 20px rgba(255, 179, 71, 0.4);
+        }
+
+        .timer-fixed .btn-timer-reset {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            min-width: 80px;
+        }
+
+        .timer-fixed .btn-timer-reset:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .timer-fixed .btn-timer-reset:active {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .timer-fixed .timer-stats {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+        }
+
+        .timer-fixed .timer-stats span {
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+        }
+
+        .timer-fixed .timer-status {
+            font-size: 0.75rem;
+            padding: 3px 12px;
+            border-radius: 50px;
+            display: inline-block;
+        }
+
+        .timer-fixed .timer-status.running {
+            background: rgba(0, 210, 160, 0.2);
+            color: #00D2A0;
+        }
+
+        .timer-fixed .timer-status.paused {
+            background: rgba(255, 179, 71, 0.2);
+            color: #FFB347;
+        }
+
+        .timer-fixed .timer-status.stopped {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Отступ для контента */
+        .workout-content {
+            padding-bottom: 100px;
+        }
+
+        /* Стили для упражнений */
+        .exercise-item {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .exercise-item:hover {
+            background-color: #f8f9fa;
+            border-left-color: #6C63FF;
+        }
+
+        .exercise-item.completed {
+            background-color: #d1e7dd;
+            border-left-color: #198754;
+        }
+
+        .exercise-item.completed .exercise-name {
+            text-decoration: line-through;
+            color: #198754;
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 768px) {
+            .timer-fixed .timer-display {
+                font-size: 1.8rem;
+            }
+            .timer-fixed .btn-timer {
+                font-size: 0.7rem;
+                padding: 5px 12px;
+                min-width: 70px;
+            }
+            .timer-fixed .timer-stats {
+                font-size: 0.6rem;
+            }
+            .workout-content {
+                padding-bottom: 120px;
+            }
+            .timer-fixed .timer-label {
+                font-size: 0.6rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .timer-fixed .timer-display {
+                font-size: 1.4rem;
+                letter-spacing: 1px;
+            }
+            .timer-fixed .btn-timer {
+                font-size: 0.6rem;
+                padding: 4px 10px;
+                min-width: 60px;
+            }
+            .workout-content {
+                padding-bottom: 140px;
+            }
+            .timer-fixed .timer-stats {
+                font-size: 0.55rem;
+            }
+        }
+
+        /* Анимация пульса для running состояния */
+        .timer-fixed .timer-display.running {
+            animation: pulseTimer 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseTimer {
+            0%, 100% { text-shadow: 0 0 20px rgba(108, 99, 255, 0.3); }
+            50% { text-shadow: 0 0 40px rgba(108, 99, 255, 0.6), 0 0 60px rgba(108, 99, 255, 0.2); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid workout-content" style="padding-bottom: 100px;">
+    <!-- Заголовок -->
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-3 mb-4 border-bottom">
         <div>
             <h1 class="h2">
@@ -48,7 +255,7 @@ $isCompleted = $workout['status'] === 'completed';
         </div>
     </div>
 
-    <!-- Прогресс и статус -->
+    <!-- Прогресс -->
     <div class="row g-4 mb-4">
         <div class="col-md-8">
             <div class="card border-0 shadow-sm">
@@ -104,44 +311,34 @@ $isCompleted = $workout['status'] === 'completed';
             <div class="list-group list-group-flush" id="exerciseList">
                 <?php foreach ($exercises as $index => $ex): ?>
                     <div class="list-group-item exercise-item <?php echo $ex['is_completed'] ? 'completed' : ''; ?>" 
-                        data-exercise="<?php echo $ex['id']; ?>"
-                        style="cursor: pointer; transition: all 0.3s;">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="d-flex align-items-center">
-                                <span class="badge bg-secondary rounded-circle me-2" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                         data-exercise="<?php echo $ex['id']; ?>">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <span class="badge bg-secondary rounded-circle" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                                     <?php echo $index + 1; ?>
                                 </span>
-                                <div>
-                                    <strong class="exercise-name"><?php echo htmlspecialchars($ex['name']); ?></strong>
-                                    <br>
-                                    <small class="text-muted">
-                                        <i class="bi bi-tag"></i> <?php echo $ex['muscle_group']; ?>
-                                        <span class="mx-1">•</span>
-                                        <i class="bi bi-arrow-repeat"></i> <?php echo $ex['sets']; ?>×<?php echo $ex['reps']; ?>
-                                        <?php if ($ex['weight_kg']): ?>
-                                            <span class="mx-1">•</span>
-                                            <i class="bi bi-weight"></i> <?php echo $ex['weight_kg']; ?> кг
-                                        <?php endif; ?>
-                                    </small>
-                                </div>
                             </div>
-                            <div class="exercise-actions d-flex align-items-center">
-                                <span class="badge bg-<?php echo $ex['is_completed'] ? 'success' : 'secondary'; ?> rounded-pill">
-                                    <?php echo $ex['is_completed'] ? '✅ Виконано' : '⏳ Очікує'; ?>
-                                </span>
-                                <?php if ($ex['is_completed']): ?>
-                                    <button class="btn btn-sm btn-outline-danger cancel-exercise-btn ms-2" 
-                                            style="display: inline-block;"
-                                            title="Скасувати виконання">
-                                        <i class="bi bi-arrow-counterclockwise"></i>
-                                    </button>
-                                <?php else: ?>
-                                    <button class="btn btn-sm btn-outline-danger cancel-exercise-btn ms-2" 
-                                            style="display: none;"
-                                            title="Скасувати виконання">
-                                        <i class="bi bi-arrow-counterclockwise"></i>
-                                    </button>
-                                <?php endif; ?>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong class="exercise-name"><?php echo htmlspecialchars($ex['name']); ?></strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="bi bi-tag"></i> <?php echo $ex['muscle_group']; ?>
+                                            <span class="mx-1">•</span>
+                                            <i class="bi bi-arrow-repeat"></i> <?php echo $ex['sets']; ?>×<?php echo $ex['reps']; ?>
+                                            <?php if ($ex['weight_kg']): ?>
+                                                <span class="mx-1">•</span>
+                                                <i class="bi bi-weight"></i> <?php echo $ex['weight_kg']; ?> кг
+                                            <?php endif; ?>
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-<?php echo $ex['is_completed'] ? 'success' : 'secondary'; ?> rounded-pill">
+                                            <?php echo $ex['is_completed'] ? '✅ Виконано' : '⏳ Очікує'; ?>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -178,36 +375,43 @@ $isCompleted = $workout['status'] === 'completed';
     </div>
 </div>
 
-<!-- Добавить после прогресса, перед упражнениями -->
-<!-- Таймер тренировки -->
-<div class="card border-0 shadow-sm mb-4" id="timerCard">
-    <div class="card-body">
+<!-- ===== ФИКСИРОВАННЫЙ ТАЙМЕР ===== -->
+<div class="timer-fixed" id="timerCard">
+    <div class="container">
         <div class="row align-items-center">
-            <div class="col-md-4 text-center">
-                <div class="display-4 fw-bold" id="timerDisplay" style="font-size: 3rem; font-variant-numeric: tabular-nums;">
-                    00:00:00
+            <!-- Время -->
+            <div class="col-md-4 col-lg-3 text-center text-md-start">
+                <div class="d-flex align-items-center gap-3">
+                    <div>
+                        <div class="timer-display" id="timerDisplay">00:00:00</div>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <span class="timer-status stopped" id="timerStatus">⏸️ Не запущено</span>
+                        </div>
+                    </div>
                 </div>
-                <small class="text-muted" id="timerStatus">⏸️ На паузі</small>
             </div>
-            <div class="col-md-8">
-                <div class="d-flex gap-2 justify-content-center justify-content-md-end flex-wrap">
-                    <button class="btn btn-success btn-gradient" id="timerStartBtn">
+
+            <!-- Кнопки -->
+            <div class="col-md-5 col-lg-6 text-center my-2 my-md-0">
+                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                    <button class="btn btn-timer btn-timer-start" id="timerMainBtn">
                         <i class="bi bi-play-fill"></i> Старт
                     </button>
-                    <button class="btn btn-warning" id="timerPauseBtn" disabled>
-                        <i class="bi bi-pause-fill"></i> Пауза
-                    </button>
-                    <button class="btn btn-danger" id="timerResetBtn">
+                    <button class="btn btn-timer btn-timer-reset" id="timerResetBtn">
                         <i class="bi bi-arrow-counterclockwise"></i> Скинути
                     </button>
-                    <button class="btn btn-info text-white" id="timerRestBtn" disabled>
-                        <i class="bi bi-clock"></i> Перерва (1 хв)
-                    </button>
                 </div>
-                <div class="mt-2 text-center text-muted small" id="timerInfo">
-                    Час тренування: <span id="workoutTime">00:00:00</span>
-                    <span class="mx-2">|</span>
-                    Перерв: <span id="restCount">0</span>
+            </div>
+
+            <!-- Статистика -->
+            <div class="col-md-3 text-center text-md-end">
+                <div class="timer-stats">
+                    <div>Час тренування: <span id="workoutTime">00:00:00</span></div>
+                    <div class="mt-1">
+                        <i class="bi bi-check-circle text-success"></i> 
+                        <span id="completedStats"><?php echo $workout['completed_exercises']; ?></span>/
+                        <span id="totalStats"><?php echo $workout['total_exercises']; ?></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -216,53 +420,15 @@ $isCompleted = $workout['status'] === 'completed';
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    let currentWorkoutId = <?php echo $workoutId; ?>;
+    // ===== ПЕРЕКЛЮЧЕНИЕ УПРАЖНЕНИЙ =====
     let completedCount = <?php echo $workout['completed_exercises']; ?>;
     let totalCount = <?php echo $workout['total_exercises']; ?>;
-    
-    // ===== УПРАЖНЕНИЯ С ВОЗМОЖНОСТЬЮ ОТМЕНЫ =====
-document.querySelectorAll('.exercise-item').forEach(function(item) {
-    item.addEventListener('click', function(e) {
-        // Если кликнули по кнопке удаления - пропускаем
-        if (e.target.closest('.cancel-exercise-btn')) return;
-        
-        const exerciseId = this.dataset.exercise;
-        const isCompleted = this.classList.contains('completed');
-        
-        // Если упражнение уже выполнено и не нажата кнопка отмены - показываем предупреждение
-        if (isCompleted) {
-            // Показываем кнопку отмены
-            const cancelBtn = this.querySelector('.cancel-exercise-btn');
-            if (cancelBtn) {
-                cancelBtn.style.display = 'inline-block';
-                setTimeout(() => {
-                    cancelBtn.style.display = 'none';
-                }, 3000);
-            } else {
-                // Создаем кнопку отмены
-                const actions = this.querySelector('.exercise-actions');
-                if (actions) {
-                    const btn = document.createElement('button');
-                    btn.className = 'btn btn-sm btn-outline-danger cancel-exercise-btn ms-2';
-                    btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
-                    btn.title = 'Скасувати виконання';
-                    btn.style.display = 'inline-block';
-                    btn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        cancelExercise(exerciseId, item);
-                    });
-                    actions.appendChild(btn);
-                }
-            }
-            return;
-        }
-        
-        // Отмечаем как выполненное
-        markExerciseComplete(exerciseId, item);
-            });
-        });
+    let currentWorkoutId = <?php echo $workoutId; ?>;
 
-        function markExerciseComplete(exerciseId, element) {
+    document.querySelectorAll('.exercise-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            const exerciseId = this.dataset.exercise;
+            
             const formData = new FormData();
             formData.append('action', 'toggle_exercise');
             formData.append('exercise_id', exerciseId);
@@ -274,87 +440,200 @@ document.querySelectorAll('.exercise-item').forEach(function(item) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    element.classList.add('completed');
-                    const badge = element.querySelector('.badge');
-                    if (badge) {
-                        badge.textContent = '✅ Виконано';
-                        badge.className = 'badge bg-success rounded-pill';
-                    }
+                    this.classList.toggle('completed');
                     
-                    // Добавляем кнопку отмены
-                    const actions = element.querySelector('.exercise-actions') || element.querySelector('.d-flex');
-                    if (actions) {
-                        const existingBtn = actions.querySelector('.cancel-exercise-btn');
-                        if (!existingBtn) {
-                            const btn = document.createElement('button');
-                            btn.className = 'btn btn-sm btn-outline-danger cancel-exercise-btn ms-2';
-                            btn.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
-                            btn.title = 'Скасувати виконання';
-                            btn.style.display = 'inline-block';
-                            btn.addEventListener('click', function(e) {
-                                e.stopPropagation();
-                                cancelExercise(exerciseId, element);
-                            });
-                            actions.appendChild(btn);
+                    const badge = this.querySelector('.badge');
+                    if (badge) {
+                        if (this.classList.contains('completed')) {
+                            badge.textContent = '✅ Виконано';
+                            badge.className = 'badge bg-success rounded-pill';
+                            completedCount++;
+                            playSound('complete');
+                            showToast('✅ Вправу виконано!', 'success');
+                        } else {
+                            badge.textContent = '⏳ Очікує';
+                            badge.className = 'badge bg-secondary rounded-pill';
+                            completedCount--;
+                            showToast('🔄 Виконання скасовано', 'info');
                         }
                     }
                     
-                    completedCount++;
                     updateProgress(completedCount, totalCount);
-                    playSound('complete');
-                    showToast('✅ Вправу виконано!', 'success');
+                    document.getElementById('completedStats').textContent = completedCount;
                 }
-            });
-        }
-
-        function cancelExercise(exerciseId, element) {
-            if (!confirm('Скасувати виконання цієї вправи?')) return;
-            
-            const formData = new FormData();
-            formData.append('action', 'toggle_exercise');
-            formData.append('exercise_id', exerciseId);
-            
-            fetch('/api/workout.php', {
-                method: 'POST',
-                body: formData
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    element.classList.remove('completed');
-                    const badge = element.querySelector('.badge');
-                    if (badge) {
-                        badge.textContent = '⏳ Очікує';
-                        badge.className = 'badge bg-secondary rounded-pill';
-                    }
-                    
-                    const cancelBtn = element.querySelector('.cancel-exercise-btn');
-                    if (cancelBtn) {
-                        cancelBtn.style.display = 'none';
-                    }
-                    
-                    completedCount--;
-                    updateProgress(completedCount, totalCount);
-                    showToast('🔄 Виконання скасовано', 'info');
-                }
+            .catch(function(error) {
+                console.error('Ошибка:', error);
+                showToast('Помилка з\'єднання', 'danger');
             });
-        }
-    
+        });
+    });
+
     function updateProgress(completed, total) {
         const progress = Math.round((completed / total) * 100);
         const progressBar = document.querySelector('.progress .progress-bar');
         const progressText = document.querySelector('.progress + .d-flex .text-muted:first-child');
+        const percentText = document.querySelector('.progress + .d-flex .fw-bold');
         
         if (progressBar) progressBar.style.width = progress + '%';
         if (progressText) {
             progressText.innerHTML = `<i class="bi bi-check-circle"></i> ${completed}/${total} виконано`;
         }
-        
-        const percentText = document.querySelector('.progress + .d-flex .fw-bold');
         if (percentText) percentText.textContent = progress + '%';
     }
+
+    // ===== ЗВУК =====
+    function playSound(type) {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            if (type === 'complete') {
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+                oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            }
+        } catch(e) {}
+    }
+
+    // ===== ТАЙМЕР =====
+let timerInterval = null;
+let isRunning = false;
+let isPaused = false;
+let seconds = 0;
+let workoutSeconds = 0;
+
+const timerDisplay = document.getElementById('timerDisplay');
+const timerStatus = document.getElementById('timerStatus');
+const timerMainBtn = document.getElementById('timerMainBtn');
+const timerResetBtn = document.getElementById('timerResetBtn');
+const workoutTimeDisplay = document.getElementById('workoutTime');
+
+function formatTime(totalSeconds) {
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function updateDisplay() {
+    timerDisplay.textContent = formatTime(seconds);
+    workoutTimeDisplay.textContent = formatTime(workoutSeconds);
+}
+
+function updateStatusUI(status, label) {
+    timerStatus.textContent = label;
+    timerStatus.className = 'timer-status ' + status;
     
-    // Завершение тренировки
+    if (status === 'running') {
+        timerDisplay.classList.add('running');
+    } else {
+        timerDisplay.classList.remove('running');
+    }
+}
+
+function updateMainButton(mode) {
+    if (mode === 'start') {
+        timerMainBtn.innerHTML = '<i class="bi bi-play-fill"></i> Старт';
+        timerMainBtn.className = 'btn btn-timer btn-timer-start';
+    } else if (mode === 'pause') {
+        timerMainBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Пауза';
+        timerMainBtn.className = 'btn btn-timer btn-timer-pause';
+    } else if (mode === 'resume') {
+        timerMainBtn.innerHTML = '<i class="bi bi-play-fill"></i> Продовжити';
+        timerMainBtn.className = 'btn btn-timer btn-timer-start';
+    }
+}
+
+function startTimer() {
+    // Если таймер уже запущен и НЕ на паузе — ставим на паузу
+    if (isRunning && !isPaused) {
+        pauseTimer();
+        return;
+    }
+    
+    // Если на паузе — продолжаем
+    if (isPaused) {
+        isPaused = false;
+        updateStatusUI('running', '▶️ В процесі');
+        updateMainButton('pause');
+        
+        // Запускаем интервал заново
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+        timerInterval = setInterval(function() {
+            seconds++;
+            workoutSeconds++;
+            updateDisplay();
+        }, 1000);
+        return;
+    }
+    
+    // Первый запуск
+    isRunning = true;
+    updateStatusUI('running', '▶️ В процесі');
+    updateMainButton('pause');
+    
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+    timerInterval = setInterval(function() {
+        seconds++;
+        workoutSeconds++;
+        updateDisplay();
+    }, 1000);
+}
+
+function pauseTimer() {
+    // Если таймер не запущен или уже на паузе — ничего не делаем
+    if (!isRunning || isPaused) return;
+    
+    // Останавливаем интервал
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    
+    isPaused = true;
+    updateStatusUI('paused', '⏸️ На паузі');
+    updateMainButton('resume');
+}
+
+function resetTimer() {
+    if (!confirm('Скинути таймер?')) return;
+    
+    // Останавливаем интервал
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    
+    isRunning = false;
+    isPaused = false;
+    seconds = 0;
+    workoutSeconds = 0;
+    
+    updateStatusUI('stopped', '⏸️ Не запущено');
+    updateMainButton('start');
+    updateDisplay();
+    showToast('Таймер скинуто', 'info');
+}
+
+// Обработчик основной кнопки
+timerMainBtn.addEventListener('click', startTimer);
+
+// Обработчик сброса
+timerResetBtn.addEventListener('click', resetTimer);
+
+    // ===== ЗАВЕРШЕНИЕ ТРЕНИРОВКИ =====
     document.getElementById('completeWorkoutBtn')?.addEventListener('click', function() {
         if (completedCount < totalCount) {
             if (!confirm('Ви виконали не всі вправи. Завершити тренування?')) return;
@@ -392,8 +671,8 @@ document.querySelectorAll('.exercise-item').forEach(function(item) {
             btn.innerHTML = '<i class="bi bi-check-circle"></i> Завершити тренування';
         });
     });
-    
-    // Добавление заметки
+
+    // ===== ЗАМЕТКИ =====
     document.getElementById('noteForm')?.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -417,237 +696,13 @@ document.querySelectorAll('.exercise-item').forEach(function(item) {
             showToast('Помилка з\'єднання', 'danger');
         });
     });
-    
-    // Звук
-    function playSound(type) {
-        try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            if (type === 'complete') {
-                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-                oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.1);
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.3);
-            }
-        } catch(e) {}
-    }
-});
 
-// ===== ТАЙМЕР ТРЕНИРОВКИ =====
-let timerInterval = null;
-let isRunning = false;
-let isPaused = false;
-let isResting = false;
-let seconds = 0;
-let restCount = 0;
-let workoutSeconds = 0;
-
-const timerDisplay = document.getElementById('timerDisplay');
-const timerStatus = document.getElementById('timerStatus');
-const timerStartBtn = document.getElementById('timerStartBtn');
-const timerPauseBtn = document.getElementById('timerPauseBtn');
-const timerResetBtn = document.getElementById('timerResetBtn');
-const timerRestBtn = document.getElementById('timerRestBtn');
-const workoutTimeDisplay = document.getElementById('workoutTime');
-const restCountDisplay = document.getElementById('restCount');
-
-function formatTime(totalSeconds) {
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
-function updateDisplay() {
-    timerDisplay.textContent = formatTime(seconds);
-    workoutTimeDisplay.textContent = formatTime(workoutSeconds);
-    restCountDisplay.textContent = restCount;
-}
-
-function startTimer() {
-    if (isRunning && !isPaused) return;
-    
-    if (isPaused) {
-        // Продолжаем
-        isPaused = false;
-        timerStatus.textContent = '▶️ В процесі';
-        timerStartBtn.innerHTML = '<i class="bi bi-play-fill"></i> Продовжити';
-    } else if (isResting) {
-        // Завершаем перерыв
-        isResting = false;
-        timerStatus.textContent = '▶️ В процесі';
-        timerStartBtn.innerHTML = '<i class="bi bi-play-fill"></i> Продовжити';
-        timerRestBtn.disabled = false;
-    } else {
-        // Запускаем с нуля
-        isRunning = true;
-        timerStatus.textContent = '▶️ В процесі';
-        timerStartBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Пауза';
-        timerStartBtn.className = 'btn btn-warning';
-    }
-    
-    timerStartBtn.disabled = true;
-    timerPauseBtn.disabled = false;
-    timerRestBtn.disabled = false;
-    timerStartBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> ...';
-    
-    if (!timerInterval) {
-        timerInterval = setInterval(function() {
-            seconds++;
-            if (!isResting && !isPaused) {
-                workoutSeconds++;
-            }
-            updateDisplay();
-        }, 1000);
-    }
-    
-    setTimeout(() => {
-        timerStartBtn.disabled = false;
-        timerStartBtn.innerHTML = '<i class="bi bi-play-fill"></i> Продовжити';
-        timerStartBtn.className = 'btn btn-success btn-gradient';
-    }, 500);
-}
-
-function pauseTimer() {
-    if (!isRunning || isPaused) return;
-    if (isResting) {
-        // Если на перерыве - просто останавливаем отсчет
-        isPaused = true;
-        timerStatus.textContent = '⏸️ Перерва на паузі';
-        timerStartBtn.innerHTML = '<i class="bi bi-play-fill"></i> Продовжити';
-        timerStartBtn.disabled = false;
-        timerPauseBtn.disabled = true;
-        return;
-    }
-    
-    isPaused = true;
-    timerStatus.textContent = '⏸️ На паузі';
-    timerStartBtn.innerHTML = '<i class="bi bi-play-fill"></i> Продовжити';
-    timerStartBtn.disabled = false;
-    timerPauseBtn.disabled = true;
-}
-
-function resetTimer() {
-    if (!confirm('Скинути таймер?')) return;
-    
-    clearInterval(timerInterval);
-    timerInterval = null;
-    isRunning = false;
-    isPaused = false;
-    isResting = false;
-    seconds = 0;
-    workoutSeconds = 0;
-    restCount = 0;
-    
-    timerStatus.textContent = '⏸️ На паузі';
-    timerStartBtn.innerHTML = '<i class="bi bi-play-fill"></i> Старт';
-    timerStartBtn.className = 'btn btn-success btn-gradient';
-    timerStartBtn.disabled = false;
-    timerPauseBtn.disabled = true;
-    timerRestBtn.disabled = true;
+    // ===== ИНИЦИАЛИЗАЦИЯ =====
     updateDisplay();
-    showToast('Таймер скинуто', 'info');
-}
-
-function startRest() {
-    if (isResting) return;
-    if (!isRunning) {
-        showToast('Спочатку запустіть таймер', 'warning');
-        return;
-    }
-    
-    isResting = true;
-    isPaused = false;
-    restCount++;
-    timerStatus.textContent = '☕ Перерва (1 хв)';
-    timerStartBtn.innerHTML = '<i class="bi bi-clock"></i> Завершити перерву';
-    timerStartBtn.className = 'btn btn-info text-white';
-    timerStartBtn.disabled = false;
-    timerPauseBtn.disabled = true;
-    timerRestBtn.disabled = true;
-    
-    // Таймер обратного отсчета
-    let restSeconds = 60;
-    timerDisplay.textContent = formatTime(restSeconds);
-    
-    const restInterval = setInterval(function() {
-        restSeconds--;
-        timerDisplay.textContent = formatTime(restSeconds);
-        
-        if (restSeconds <= 10) {
-            timerDisplay.style.color = '#dc3545';
-            if (restSeconds <= 5) {
-                timerDisplay.style.fontWeight = '900';
-            }
-        }
-        
-        if (restSeconds <= 0) {
-            clearInterval(restInterval);
-            timerDisplay.style.color = '';
-            timerDisplay.style.fontWeight = '';
-            timerStatus.textContent = '▶️ В процесі';
-            timerStartBtn.innerHTML = '<i class="bi bi-play-fill"></i> Продовжити';
-            timerStartBtn.className = 'btn btn-success btn-gradient';
-            timerRestBtn.disabled = false;
-            isResting = false;
-            isPaused = false;
-            timerDisplay.textContent = formatTime(seconds);
-            showToast('⏰ Перерва закінчилась!', 'info');
-        }
-    }, 1000);
-    
-    // Сохраняем интервал для очистки при ручном завершении
-    window._restInterval = restInterval;
-}
-
-// Обработчики кнопок
-timerStartBtn.addEventListener('click', function() {
-    if (isResting) {
-        // Завершаем перерыв
-        if (window._restInterval) {
-            clearInterval(window._restInterval);
-            window._restInterval = null;
-        }
-        timerDisplay.style.color = '';
-        timerDisplay.style.fontWeight = '';
-        isResting = false;
-        isPaused = false;
-        timerStatus.textContent = '▶️ В процесі';
-        timerStartBtn.innerHTML = '<i class="bi bi-play-fill"></i> Продовжити';
-        timerStartBtn.className = 'btn btn-success btn-gradient';
-        timerPauseBtn.disabled = false;
-        timerRestBtn.disabled = false;
-        timerDisplay.textContent = formatTime(seconds);
-        showToast('Перерву завершено', 'info');
-        return;
-    }
-    
-    if (!isRunning) {
-        startTimer();
-    } else if (isPaused) {
-        // Продолжаем
-        isPaused = false;
-        timerStatus.textContent = '▶️ В процесі';
-        timerStartBtn.innerHTML = '<i class="bi bi-play-fill"></i> Продовжити';
-        timerPauseBtn.disabled = false;
-    }
+    updateMainButton('start');
 });
-
-timerPauseBtn.addEventListener('click', pauseTimer);
-
-timerResetBtn.addEventListener('click', resetTimer);
-
-timerRestBtn.addEventListener('click', startRest);
-
-// Инициализация
-updateDisplay();
-timerPauseBtn.disabled = true;
-timerRestBtn.disabled = true;
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

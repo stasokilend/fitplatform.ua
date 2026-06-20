@@ -37,15 +37,15 @@
                 <a href="/dashboard.php?page=health" class="btn-icon position-relative">
                     <i class="bi bi-heart-pulse"></i>
                 </a>
-                <a href="/dashboard.php?page=profile" class="btn-icon">
-                    <i class="bi bi-person"></i>
+                <a href="/dashboard.php?page=settings" class="btn-icon">
+                    <i class="bi bi-gear"></i>
                 </a>
             </div>
         </div>
     </header>
     <?php endif; ?>
 
-    <!-- Десктопная навигация (показываем всегда на ПК) -->
+    <!-- Десктопная навигация -->
     <nav class="navbar navbar-expand-lg navbar-dark d-none d-md-flex">
         <div class="container">
             <a class="navbar-brand" href="/">
@@ -57,29 +57,7 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-lg-center">
-                    <?php if (isset($_SESSION['user_id'])): ?>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/dashboard.php">
-                                <i class="bi bi-speedometer2"></i> Кабінет
-                            </a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" 
-                               data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-person-circle"></i> <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Користувач'); ?>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userDropdown">
-                                <li><a class="dropdown-item" href="/dashboard.php"><i class="bi bi-speedometer2 me-2"></i> Кабінет</a></li>
-                                <li><a class="dropdown-item" href="/dashboard.php?page=profile"><i class="bi bi-gear me-2"></i> Налаштування</a></li>
-                                <?php if ($_SESSION['user_role'] === 'admin'): ?>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" href="/admin/index.php"><i class="bi bi-shield-lock me-2"></i> Адмін-панель</a></li>
-                                <?php endif; ?>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Вийти</a></li>
-                            </ul>
-                        </li>
-                    <?php else: ?>
+                    <?php if (!isset($_SESSION['user_id'])): ?>
                         <li class="nav-item">
                             <a class="nav-link" href="/login.php">
                                 <i class="bi bi-box-arrow-in-right"></i> Вхід
@@ -91,12 +69,38 @@
                             </a>
                         </li>
                     <?php endif; ?>
+
+                    <!-- В десктопной навигации, после кнопки Кабинет -->
+                    <li class="nav-item position-relative">
+                        <a class="nav-link" href="#" id="notificationBell" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-bell" style="font-size: 1.2rem;"></i>
+                            <span class="notification-badge" id="desktopBadge" style="display: none; position: absolute; top: 0; right: 0; background: #dc3545; color: white; border-radius: 50%; font-size: 0.6rem; padding: 2px 6px; min-width: 18px; text-align: center;">0</span>
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end notification-dropdown p-0" aria-labelledby="notificationBell" style="width: 380px; max-height: 500px; overflow: hidden;">
+                            <div class="notification-header d-flex justify-content-between align-items-center p-3 border-bottom">
+                                <h6 class="mb-0 fw-bold"><i class="bi bi-bell text-primary"></i> Сповіщення</h6>
+                                <div>
+                                    <button class="btn btn-sm btn-link text-decoration-none" id="markAllReadBtn">Позначити всі</button>
+                                    <button class="btn btn-sm btn-link text-danger text-decoration-none" id="clearAllBtn">Очистити</button>
+                                </div>
+                            </div>
+                            <div class="notification-list" id="notificationList" style="max-height: 380px; overflow-y: auto;">
+                                <div class="text-center py-4 text-muted" id="notificationEmpty">
+                                    <i class="bi bi-bell-slash display-6 d-block mb-2"></i>
+                                    <span>Немає сповіщень</span>
+                                </div>
+                            </div>
+                            <div class="notification-footer p-2 border-top text-center">
+                                <button class="btn btn-sm btn-outline-primary w-100" id="loadMoreBtn">Завантажити ще</button>
+                            </div>
+                        </div>
+                    </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <!-- Mobile Drawer (меню) - только для авторизованных -->
+    <!-- Mobile Drawer (меню) -->
     <?php if (isset($_SESSION['user_id'])): ?>
     <div class="mobile-drawer-overlay" id="drawerOverlay"></div>
     <div class="mobile-drawer" id="mobileDrawer">
@@ -118,8 +122,9 @@
             </div>
         </div>
         <div class="drawer-body">
+            <!-- Кабинет -->
             <a href="/dashboard.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) === 'dashboard.php' && !isset($_GET['page']) ? 'active' : ''; ?>">
-                <i class="bi bi-speedometer2"></i> Головна
+                <i class="bi bi-speedometer2"></i> Кабінет
             </a>
             
             <?php if ($_SESSION['user_role'] !== 'trainer'): ?>
@@ -138,9 +143,6 @@
                 <a href="/dashboard.php?page=achievements" class="nav-link <?php echo ($_GET['page'] ?? '') === 'achievements' ? 'active' : ''; ?>">
                     <i class="bi bi-trophy"></i> Досягнення
                 </a>
-                <a href="/dashboard.php?page=google-fit" class="nav-link <?php echo ($_GET['page'] ?? '') === 'google-fit' ? 'active' : ''; ?>">
-                    <i class="bi bi-google"></i> Google Fit
-                </a>
             <?php else: ?>
                 <a href="/dashboard.php?page=clients" class="nav-link <?php echo ($_GET['page'] ?? '') === 'clients' ? 'active' : ''; ?>">
                     <i class="bi bi-people"></i> Клієнти
@@ -156,7 +158,8 @@
                 </a>
             <?php endif; ?>
             
-            <a href="/dashboard.php?page=profile" class="nav-link <?php echo ($_GET['page'] ?? '') === 'profile' ? 'active' : ''; ?>">
+            <!-- Настройки (для всех) -->
+            <a href="/dashboard.php?page=settings" class="nav-link <?php echo ($_GET['page'] ?? '') === 'settings' ? 'active' : ''; ?>">
                 <i class="bi bi-gear"></i> Налаштування
             </a>
             
@@ -205,7 +208,7 @@
         <?php echo $content; ?>
     </main>
 
-    <!-- Mobile Bottom Navigation - только для авторизованных -->
+    <!-- Mobile Bottom Navigation -->
     <?php if (isset($_SESSION['user_id'])): ?>
     <nav class="mobile-bottom-nav d-md-none">
         <div class="container-fluid px-0">
@@ -252,9 +255,9 @@
                     </a>
                 </div>
                 <div class="col">
-                    <a href="/dashboard.php?page=profile" class="mobile-nav-link <?php echo ($_GET['page'] ?? '') === 'profile' ? 'active' : ''; ?>">
-                        <i class="bi bi-person"></i>
-                        <span>Профіль</span>
+                    <a href="/dashboard.php?page=settings" class="mobile-nav-link <?php echo ($_GET['page'] ?? '') === 'settings' ? 'active' : ''; ?>">
+                        <i class="bi bi-gear"></i>
+                        <span>Налаштування</span>
                     </a>
                 </div>
             </div>
@@ -288,10 +291,10 @@
                             <i class="bi bi-telegram fs-5"></i>
                         </a>
                         <a href="#" class="text-white-50 text-decoration-none hover-effect">
-                            <i class="bi bi-tiktok fs-5"></i>
+                            <i class="bi bi-github fs-5"></i>
                         </a>
                         <a href="#" class="text-white-50 text-decoration-none hover-effect">
-                            <i class="bi bi-github fs-5"></i>
+                            <i class="bi bi-tiktok fs-5"></i>
                         </a>
                     </div>
                 </div>
@@ -317,7 +320,7 @@
             </div>
         </div>
     </footer>
-    
+
     <!-- Контейнер для уведомлений -->
     <div id="notificationContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999;"></div>
 

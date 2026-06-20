@@ -79,12 +79,6 @@ ob_start();
                                 <i class="bi bi-trophy"></i> Досягнення
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'google-fit' ? 'active' : ''; ?>" 
-                               href="/dashboard.php?page=google-fit">
-                                <i class="bi bi-google"></i> Google Fit
-                            </a>
-                        </li>
                     <?php endif; ?>
                     
                     <!-- Для тренеров -->
@@ -130,10 +124,10 @@ ob_start();
                         </li>
                     <?php endif; ?>
                     
-                    <!-- Профиль (для всех) -->
+                    <!-- Настройки (для всех) -->
                     <li class="nav-item">
-                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'profile' ? 'active' : ''; ?>" 
-                           href="/dashboard.php?page=profile">
+                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'settings' ? 'active' : ''; ?>" 
+                        href="/dashboard.php?page=settings">
                             <i class="bi bi-gear"></i> Налаштування
                         </a>
                     </li>

@@ -374,3 +374,43 @@ CREATE TABLE trainer_schedule (
 -- Вставляем тестовые данные для тренера (пароль: trainer123)
 INSERT INTO users (email, password_hash, full_name, role, specialty, experience_years, is_verified) 
 VALUES ('trainer@fitplatform.ua', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Олексій Тренер', 'trainer', 'Силові тренування, Функціональний фітнес', 5, 1);
+
+-- Таблица уведомлений
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    type VARCHAR(50) NOT NULL DEFAULT 'info',
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    icon VARCHAR(50) DEFAULT 'bi-bell',
+    link VARCHAR(255) NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_read (user_id, is_read),
+    INDEX idx_created (created_at)
+);
+
+-- Системные уведомления (шаблоны)
+CREATE TABLE IF NOT EXISTS notification_templates (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(50) UNIQUE NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    icon VARCHAR(50) DEFAULT 'bi-bell',
+    type VARCHAR(50) DEFAULT 'info',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Вставляем шаблоны уведомлений
+INSERT INTO notification_templates (code, title, message, icon, type) VALUES
+('workout_completed', '🎉 Тренування завершено!', 'Ви успішно завершили тренування "{workout_name}". Ви спалили {calories} калорій!', 'bi-check-circle', 'success'),
+('workout_created', '📋 Нове тренування', 'Ви створили нове тренування "{workout_name}"', 'bi-calendar-plus', 'info'),
+('achievement_unlocked', '🏆 Нове досягнення!', 'Ви отримали досягнення "{achievement_name}"!', 'bi-trophy', 'success'),
+('streak_milestone', '🔥 Серія!', 'Ви тренуєтесь {streak} днів поспіль! Так тримати!', 'bi-fire', 'warning'),
+('level_up', '⬆️ Новий рівень!', 'Вітаємо! Ви досягли рівня {level}!', 'bi-arrow-up-circle', 'success'),
+('new_client', '👤 Новий клієнт', 'Користувач "{client_name}" став вашим клієнтом', 'bi-person-plus', 'info'),
+('message_received', '💬 Нове повідомлення', 'Ви отримали повідомлення від {sender_name}', 'bi-chat', 'info'),
+('program_assigned', '📋 Нова програма', 'Вам призначено програму "{program_name}"', 'bi-file-text', 'info'),
+('weight_milestone', '⚖️ Прогрес у вазі', 'Ви досягли цільової ваги!', 'bi-weight-scale', 'success'),
+('reminder', '⏰ Нагадування', 'Не забудьте про тренування сьогодні!', 'bi-clock', 'warning');

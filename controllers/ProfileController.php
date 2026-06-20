@@ -6,37 +6,64 @@ function updateProfile($userId, $data) {
     global $pdo;
     
     try {
-        $stmt = $pdo->prepare("
-            UPDATE user_profiles 
-            SET age = ?, 
-                weight = ?, 
-                height = ?, 
-                gender = ?, 
-                fitness_level = ?, 
-                goal_type = ?, 
-                target_weight = ?,
-                medical_notes = ?, 
-                profile_completed = 1
-            WHERE user_id = ?
-        ");
+        // Проверяем существование записи
+        $stmt = $pdo->prepare("SELECT user_id FROM user_profiles WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        $exists = $stmt->fetch();
         
-        $result = $stmt->execute([
-            $data['age'],
-            $data['weight'],
-            $data['height'],
-            $data['gender'],
-            $data['fitness_level'],
-            $data['goal_type'],
-            $data['target_weight'] ?? null,
-            $data['medical_notes'] ?? null,
-            $userId
-        ]);
-        
-        error_log("Profile update for user $userId: " . ($result ? 'success' : 'failed'));
-        
-        return $result;
-    } catch (Exception $e) {
-        error_log("Error updating profile: " . $e->getMessage());
+        if ($exists) {
+            // Обновляем существующую запись
+            $stmt = $pdo->prepare("
+                UPDATE user_profiles 
+                SET 
+                    age = ?,
+                    weight = ?,
+                    height = ?,
+                    gender = ?,
+                    fitness_level = ?,
+                    goal_type = ?,
+                    target_weight = ?,
+                    medical_notes = ?,
+                    profile_completed = 1,
+                    updated_at = NOW()
+                WHERE user_id = ?
+            ");
+            
+            return $stmt->execute([
+                $data['age'] ?? null,
+                $data['weight'] ?? null,
+                $data['height'] ?? null,
+                $data['gender'] ?? null,
+                $data['fitness_level'] ?? 'beginner',
+                $data['goal_type'] ?? 'health',
+                $data['target_weight'] ?? null,
+                $data['medical_notes'] ?? null,
+                $userId
+            ]);
+        } else {
+            // Создаем новую запись
+            $stmt = $pdo->prepare("
+                INSERT INTO user_profiles (
+                    user_id, age, weight, height, gender, 
+                    fitness_level, goal_type, target_weight, 
+                    medical_notes, profile_completed
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+            ");
+            
+            return $stmt->execute([
+                $userId,
+                $data['age'] ?? null,
+                $data['weight'] ?? null,
+                $data['height'] ?? null,
+                $data['gender'] ?? null,
+                $data['fitness_level'] ?? 'beginner',
+                $data['goal_type'] ?? 'health',
+                $data['target_weight'] ?? null,
+                $data['medical_notes'] ?? null
+            ]);
+        }
+    } catch (PDOException $e) {
+        error_log('Update profile error: ' . $e->getMessage());
         return false;
     }
 }
@@ -52,9 +79,26 @@ function getUserProfile($userId) {
             WHERE u.id = ?
         ");
         $stmt->execute([$userId]);
-        return $stmt->fetch();
-    } catch (Exception $e) {
-        error_log("Error getting profile: " . $e->getMessage());
+        $result = $stmt->fetch();
+        
+        if (!$result) {
+            // Создаем пустой профиль если нет
+            $stmt = $pdo->prepare("INSERT INTO user_profiles (user_id) VALUES (?)");
+            $stmt->execute([$userId]);
+            
+            $stmt = $pdo->prepare("
+                SELECT u.*, up.* 
+                FROM users u
+                LEFT JOIN user_profiles up ON u.id = up.user_id
+                WHERE u.id = ?
+            ");
+            $stmt->execute([$userId]);
+            $result = $stmt->fetch();
+        }
+        
+        return $result;
+    } catch (PDOException $e) {
+        error_log('Get user profile error: ' . $e->getMessage());
         return null;
     }
 }
@@ -62,23 +106,18 @@ function getUserProfile($userId) {
 function getDashboardStats($userId) {
     global $pdo;
     
-    $stats = [
-        'total_workouts' => 0,
-        'completed_workouts' => 0,
-        'total_calories' => 0,
-        'last_workout' => null
-    ];
+    $stats = [];
     
     try {
         // Всего тренировок
         $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM workout_plans WHERE user_id = ?");
         $stmt->execute([$userId]);
-        $stats['total_workouts'] = (int)($stmt->fetch()['total'] ?? 0);
+        $stats['total_workouts'] = $stmt->fetch()['total'] ?? 0;
         
         // Завершенных
         $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM workout_plans WHERE user_id = ? AND status = 'completed'");
         $stmt->execute([$userId]);
-        $stats['completed_workouts'] = (int)($stmt->fetch()['total'] ?? 0);
+        $stats['completed_workouts'] = $stmt->fetch()['total'] ?? 0;
         
         // Последняя тренировка
         $stmt = $pdo->prepare("
@@ -93,12 +132,12 @@ function getDashboardStats($userId) {
         // Всего сожжено калорий
         $stmt = $pdo->prepare("SELECT SUM(calories_burned) as total FROM workout_logs WHERE user_id = ?");
         $stmt->execute([$userId]);
-        $stats['total_calories'] = (float)($stmt->fetch()['total'] ?? 0);
+        $stats['total_calories'] = $stmt->fetch()['total'] ?? 0;
         
-    } catch (Exception $e) {
-        error_log("Error getting stats: " . $e->getMessage());
+        return $stats;
+    } catch (PDOException $e) {
+        error_log('Get dashboard stats error: ' . $e->getMessage());
+        return $stats;
     }
-    
-    return $stats;
 }
 ?>

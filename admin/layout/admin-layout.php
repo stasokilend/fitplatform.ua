@@ -26,14 +26,8 @@
                 <a href="/admin/exercises.php" class="list-group-item list-group-item-action bg-transparent text-white <?php echo basename($_SERVER['PHP_SELF']) === 'exercises.php' ? 'active' : ''; ?>">
                     <i class="bi bi-dumbbell me-2"></i> Вправи
                 </a>
-                <a href="/admin/workouts.php" class="list-group-item list-group-item-action bg-transparent text-white <?php echo basename($_SERVER['PHP_SELF']) === 'workouts.php' ? 'active' : ''; ?>">
-                    <i class="bi bi-calendar-check me-2"></i> Тренування
-                </a>
                 <a href="/admin/restrictions.php" class="list-group-item list-group-item-action bg-transparent text-white <?php echo basename($_SERVER['PHP_SELF']) === 'restrictions.php' ? 'active' : ''; ?>">
                     <i class="bi bi-heart-pulse me-2"></i> Обмеження
-                </a>
-                <a href="/admin/settings.php" class="list-group-item list-group-item-action bg-transparent text-white <?php echo basename($_SERVER['PHP_SELF']) === 'settings.php' ? 'active' : ''; ?>">
-                    <i class="bi bi-gear me-2"></i> Налаштування
                 </a>
                 <a href="/admin/logout.php" class="list-group-item list-group-item-action bg-transparent text-danger">
                     <i class="bi bi-box-arrow-right me-2"></i> Вихід

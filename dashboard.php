@@ -6,6 +6,20 @@ require_once 'config/database.php';
 require_once 'controllers/ProfileController.php';
 require_once 'includes/functions.php';
 
+
+// Проверяем актуальность роли в сессии
+$stmt = $pdo->prepare("SELECT role, full_name FROM users WHERE id = ?");
+$stmt->execute([$_SESSION['user_id']]);
+$user = $stmt->fetch();
+
+if ($user) {
+    // Если роль изменилась в БД, обновляем сессию
+    if ($_SESSION['user_role'] !== $user['role']) {
+        $_SESSION['user_role'] = $user['role'];
+        $_SESSION['user_name'] = $user['full_name'];
+    }
+}
+
 $userId = $_SESSION['user_id'];
 $profile = getUserProfile($userId);
 $stats = getDashboardStats($userId);
@@ -79,41 +93,53 @@ ob_start();
                                 <i class="bi bi-trophy"></i> Досягнення
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'settings' ? 'active' : ''; ?>" 
+                            href="/dashboard.php?page=settings">
+                                <i class="bi bi-gear"></i> Налаштування
+                            </a>
+                        </li>
                     <?php endif; ?>
                     
                     <!-- Для тренеров -->
                     <?php if ($role === 'trainer'): ?>
-                        <li class="nav-item">
-                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'clients' ? 'active' : ''; ?>" 
-                               href="/dashboard.php?page=clients">
-                                <i class="bi bi-people"></i> Клієнти
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'programs' ? 'active' : ''; ?>" 
-                               href="/dashboard.php?page=programs">
-                                <i class="bi bi-file-text"></i> Програми
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'messages' ? 'active' : ''; ?>" 
-                               href="/dashboard.php?page=messages">
-                                <i class="bi bi-chat"></i> Повідомлення
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'schedule' ? 'active' : ''; ?>" 
-                               href="/dashboard.php?page=schedule">
-                                <i class="bi bi-calendar"></i> Розклад
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'trainer-stats' ? 'active' : ''; ?>" 
-                               href="/dashboard.php?page=trainer-stats">
-                                <i class="bi bi-graph-up"></i> Статистика
-                            </a>
-                        </li>
-                    <?php endif; ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'clients' ? 'active' : ''; ?>" 
+                        href="/dashboard.php?page=clients">
+                            <i class="bi bi-people"></i> Клієнти
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'programs' ? 'active' : ''; ?>" 
+                        href="/dashboard.php?page=programs">
+                            <i class="bi bi-file-text"></i> Програми
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'messages' ? 'active' : ''; ?>" 
+                        href="/dashboard.php?page=messages">
+                            <i class="bi bi-chat"></i> Повідомлення
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'schedule' ? 'active' : ''; ?>" 
+                        href="/dashboard.php?page=schedule">
+                            <i class="bi bi-calendar"></i> Розклад
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'trainer-stats' ? 'active' : ''; ?>" 
+                        href="/dashboard.php?page=trainer-stats">
+                            <i class="bi bi-graph-up"></i> Статистика
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'settings' ? 'active' : ''; ?>" 
+                        href="/dashboard.php?page=settings">
+                            <i class="bi bi-gear"></i> Налаштування
+                        </a>
+                    </li>
+                <?php endif; ?>
                     
                     <!-- Для администратора -->
                     <?php if ($role === 'admin'): ?>
@@ -123,14 +149,6 @@ ob_start();
                             </a>
                         </li>
                     <?php endif; ?>
-                    
-                    <!-- Настройки (для всех) -->
-                    <li class="nav-item">
-                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'settings' ? 'active' : ''; ?>" 
-                        href="/dashboard.php?page=settings">
-                            <i class="bi bi-gear"></i> Налаштування
-                        </a>
-                    </li>
                     
                     <hr>
                     

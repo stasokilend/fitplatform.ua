@@ -305,5 +305,152 @@ class TrainerController {
         $stmt->execute([$this->trainerId, $weekStart, $weekStart]);
         return $stmt->fetchAll();
     }
+
+    /**
+     * Проверка, есть ли у тренера активные клиенты
+     */
+    public function hasActiveClients() {
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) as count FROM trainer_clients 
+            WHERE trainer_id = ? AND status = 'active'
+        ");
+        $stmt->execute([$this->trainerId]);
+        return ($stmt->fetch()['count'] ?? 0) > 0;
+    }
+    
+    /**
+     * Изменение роли тренера на обычного пользователя
+     */
+    public function switchToUser() {
+        try {
+            // Проверяем, есть ли активные клиенты
+            if ($this->hasActiveClients()) {
+                return [
+                    'success' => false, 
+                    'error' => 'У вас є активні клієнти. Спочатку передайте їх іншому тренеру.'
+                ];
+            }
+            
+            // Начинаем транзакцию
+            $this->pdo->beginTransaction();
+            
+            // Меняем роль
+            $stmt = $this->pdo->prepare("
+                UPDATE users SET role = 'user' WHERE id = ?
+            ");
+            $success = $stmt->execute([$this->trainerId]);
+            
+            if ($success) {
+                // Архивируем программы тренера
+                $stmt = $this->pdo->prepare("
+                    UPDATE trainer_programs SET is_active = 0 WHERE trainer_id = ?
+                ");
+                $stmt->execute([$this->trainerId]);
+                
+                // Обновляем статус клиентов (делаем неактивными)
+                $stmt = $this->pdo->prepare("
+                    UPDATE trainer_clients SET status = 'inactive' WHERE trainer_id = ?
+                ");
+                $stmt->execute([$this->trainerId]);
+                
+                $this->pdo->commit();
+                
+                // Обновляем сессию
+                $_SESSION['user_role'] = 'user';
+                
+                return ['success' => true];
+            }
+            
+            $this->pdo->rollBack();
+            return ['success' => false, 'error' => 'Помилка зміни ролі'];
+            
+        } catch (Exception $e) {
+            $this->pdo->rollBack();
+            return ['success' => false, 'error' => 'Помилка: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Изменение роли обычного пользователя на тренера
+     */
+    public function switchToTrainer() {
+        try {
+            // Проверяем, не является ли уже тренером
+            $stmt = $this->pdo->prepare("SELECT role FROM users WHERE id = ?");
+            $stmt->execute([$this->trainerId]);
+            $user = $stmt->fetch();
+            
+            if ($user['role'] === 'trainer') {
+                return ['success' => false, 'error' => 'Ви вже є тренером'];
+            }
+            
+            // Меняем роль
+            $stmt = $this->pdo->prepare("
+                UPDATE users SET role = 'trainer' WHERE id = ?
+            ");
+            $success = $stmt->execute([$this->trainerId]);
+            
+            if ($success) {
+                // Обновляем сессию
+                $_SESSION['user_role'] = 'trainer';
+                return ['success' => true];
+            }
+            
+            return ['success' => false, 'error' => 'Помилка зміни ролі'];
+            
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => 'Помилка: ' . $e->getMessage()];
+        }
+    }
+    
+    /**
+     * Получение количества активных клиентов
+     */
+    public function getActiveClientsCount() {
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) as count FROM trainer_clients 
+            WHERE trainer_id = ? AND status = 'active'
+        ");
+        $stmt->execute([$this->trainerId]);
+        return (int)($stmt->fetch()['count'] ?? 0);
+    }
+    
+    /**
+     * Передача клиентов другому тренеру
+     */
+    public function transferClients($newTrainerId) {
+        // Проверяем, что новый тренер существует
+        $stmt = $this->pdo->prepare("
+            SELECT id FROM users WHERE id = ? AND role = 'trainer'
+        ");
+        $stmt->execute([$newTrainerId]);
+        if (!$stmt->fetch()) {
+            return ['success' => false, 'error' => 'Тренера не знайдено'];
+        }
+        
+        // Передаем клиентов
+        $stmt = $this->pdo->prepare("
+            UPDATE trainer_clients 
+            SET trainer_id = ? 
+            WHERE trainer_id = ? AND status = 'active'
+        ");
+        $success = $stmt->execute([$newTrainerId, $this->trainerId]);
+        
+        return ['success' => $success];
+    }
+    
+    /**
+     * Получение списка доступных тренеров для передачи клиентов
+     */
+    public function getAvailableTrainers() {
+        $stmt = $this->pdo->prepare("
+            SELECT id, full_name, email, specialty 
+            FROM users 
+            WHERE role = 'trainer' AND id != ? AND is_active = 1
+            ORDER BY full_name
+        ");
+        $stmt->execute([$this->trainerId]);
+        return $stmt->fetchAll();
+    }
 }
 ?>

@@ -205,4 +205,86 @@ if ($action === 'delete_program') {
 }
 
 echo json_encode(['success' => false, 'error' => 'Невідома дія']);
+
+// --- ПЕРЕКЛЮЧЕНИЕ НА ПОЛЬЗОВАТЕЛЯ ---
+if ($action === 'switch_to_user') {
+    // Проверяем, что пользователь - тренер
+    if ($_SESSION['user_role'] !== 'trainer') {
+        echo json_encode(['success' => false, 'error' => 'Ви вже є звичайним користувачем']);
+        exit;
+    }
+    
+    $result = $trainer->switchToUser();
+    
+    // Если успешно, обновляем сессию
+    if ($result['success']) {
+        $_SESSION['user_role'] = 'user';
+        // Обновляем имя пользователя в сессии
+        $stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+        if ($user) {
+            $_SESSION['user_name'] = $user['full_name'];
+        }
+    }
+    
+    echo json_encode($result);
+    exit;
+}
+
+// --- ПЕРЕКЛЮЧЕНИЕ НА ТРЕНЕРА ---
+if ($action === 'switch_to_trainer') {
+    // Проверяем, что пользователь не тренер
+    if ($_SESSION['user_role'] === 'trainer') {
+        echo json_encode(['success' => false, 'error' => 'Ви вже є тренером']);
+        exit;
+    }
+    
+    $result = $trainer->switchToTrainer();
+    
+    // Если успешно, обновляем сессию
+    if ($result['success']) {
+        $_SESSION['user_role'] = 'trainer';
+        // Обновляем имя пользователя в сессии
+        $stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch();
+        if ($user) {
+            $_SESSION['user_name'] = $user['full_name'];
+        }
+    }
+    
+    echo json_encode($result);
+    exit;
+}
+
+// --- ПОЛУЧЕНИЕ СПИСКА ТРЕНЕРОВ ---
+if ($action === 'get_trainers') {
+    $trainers = $trainer->getAvailableTrainers();
+    echo json_encode(['success' => true, 'data' => $trainers]);
+    exit;
+}
+
+// --- ПЕРЕДАЧА КЛИЕНТОВ ---
+if ($action === 'transfer_clients') {
+    $newTrainerId = (int)($_POST['new_trainer_id'] ?? 0);
+    
+    if (!$newTrainerId) {
+        echo json_encode(['success' => false, 'error' => 'Виберіть тренера']);
+        exit;
+    }
+    
+    $result = $trainer->transferClients($newTrainerId);
+    echo json_encode($result);
+    exit;
+}
+
+// --- ПОЛУЧЕНИЕ КОЛИЧЕСТВА КЛИЕНТОВ ---
+if ($action === 'clients_count') {
+    $count = $trainer->getActiveClientsCount();
+    echo json_encode(['success' => true, 'count' => $count]);
+    exit;
+}
+
+echo json_encode(['success' => false, 'error' => 'Невідома дія']);
 ?>

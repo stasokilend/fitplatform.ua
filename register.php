@@ -9,7 +9,7 @@ if (isLoggedIn()) {
 $pageTitle = 'Реєстрація';
 ob_start();
 ?>
-
+<body class="auth-page">
 <div class="container py-5">
     <div class="row justify-content-center">
         <div class="col-md-6 col-lg-5">
@@ -95,7 +95,7 @@ ob_start();
         </div>
     </div>
 </div>
-
+</body>
 <?php 
 $content = ob_get_clean();
 require_once 'views/layout.php';

@@ -21,7 +21,8 @@
 </head>
 <body>
     
-    <!-- Mobile Header (видно только на телефоне) -->
+    <!-- Mobile Header (только для авторизованных пользователей) -->
+    <?php if (isset($_SESSION['user_id'])): ?>
     <header class="mobile-header d-md-none">
         <div class="d-flex justify-content-between align-items-center w-100">
             <div class="d-flex align-items-center gap-2">
@@ -33,9 +34,8 @@
                 </a>
             </div>
             <div class="header-actions">
-                <a href="/dashboard.php?page=notifications" class="btn-icon position-relative">
-                    <i class="bi bi-bell"></i>
-                    <span class="badge-dot"></span>
+                <a href="/dashboard.php?page=health" class="btn-icon position-relative">
+                    <i class="bi bi-heart-pulse"></i>
                 </a>
                 <a href="/dashboard.php?page=profile" class="btn-icon">
                     <i class="bi bi-person"></i>
@@ -43,36 +43,86 @@
             </div>
         </div>
     </header>
+    <?php endif; ?>
 
-    <!-- Десктопная навигация -->
+    <!-- Десктопная навигация (показываем всегда на ПК) -->
     <nav class="navbar navbar-expand-lg navbar-dark d-none d-md-flex">
-        <!-- ... существующий код ... -->
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-heart-pulse-fill"></i> FitPlatform
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                    <?php if (isset($_SESSION['user_id'])): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/dashboard.php">
+                                <i class="bi bi-speedometer2"></i> Кабінет
+                            </a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" 
+                               data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-person-circle"></i> <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Користувач'); ?>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="/dashboard.php"><i class="bi bi-speedometer2 me-2"></i> Кабінет</a></li>
+                                <li><a class="dropdown-item" href="/dashboard.php?page=profile"><i class="bi bi-gear me-2"></i> Налаштування</a></li>
+                                <?php if ($_SESSION['user_role'] === 'admin'): ?>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="/admin/index.php"><i class="bi bi-shield-lock me-2"></i> Адмін-панель</a></li>
+                                <?php endif; ?>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="/logout.php"><i class="bi bi-box-arrow-right me-2"></i> Вийти</a></li>
+                            </ul>
+                        </li>
+                    <?php else: ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login.php">
+                                <i class="bi bi-box-arrow-in-right"></i> Вхід
+                            </a>
+                        </li>
+                        <li class="nav-item ms-lg-2">
+                            <a class="nav-link btn btn-primary text-white px-4 rounded-pill" href="/register.php">
+                                <i class="bi bi-person-plus"></i> Реєстрація
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                </ul>
+            </div>
+        </div>
     </nav>
 
-    <!-- Mobile Drawer (меню) -->
+    <!-- Mobile Drawer (меню) - только для авторизованных -->
+    <?php if (isset($_SESSION['user_id'])): ?>
     <div class="mobile-drawer-overlay" id="drawerOverlay"></div>
     <div class="mobile-drawer" id="mobileDrawer">
         <div class="drawer-header">
-            <?php if (isset($_SESSION['user_id'])): ?>
-                <div class="avatar">
-                    <i class="bi bi-person-fill"></i>
-                </div>
-                <div class="name"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Користувач'); ?></div>
-                <div class="role">
-                    <?php echo $_SESSION['user_role'] === 'trainer' ? '🏋️ Тренер' : '💪 Користувач'; ?>
-                </div>
-            <?php else: ?>
-                <div class="avatar">
-                    <i class="bi bi-person-fill"></i>
-                </div>
-                <div class="name">Гість</div>
-            <?php endif; ?>
+            <div class="avatar">
+                <i class="bi bi-person-fill"></i>
+            </div>
+            <div class="name"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Користувач'); ?></div>
+            <div class="role">
+                <?php 
+                if ($_SESSION['user_role'] === 'trainer') {
+                    echo '🏋️ Тренер';
+                } elseif ($_SESSION['user_role'] === 'admin') {
+                    echo '👑 Адміністратор';
+                } else {
+                    echo '💪 Користувач';
+                }
+                ?>
+            </div>
         </div>
         <div class="drawer-body">
-            <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="/dashboard.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) === 'dashboard.php' && !isset($_GET['page']) ? 'active' : ''; ?>">
-                    <i class="bi bi-speedometer2"></i> Головна
-                </a>
+            <a href="/dashboard.php" class="nav-link <?php echo basename($_SERVER['PHP_SELF']) === 'dashboard.php' && !isset($_GET['page']) ? 'active' : ''; ?>">
+                <i class="bi bi-speedometer2"></i> Головна
+            </a>
+            
+            <?php if ($_SESSION['user_role'] !== 'trainer'): ?>
                 <a href="/dashboard.php?page=workouts" class="nav-link <?php echo ($_GET['page'] ?? '') === 'workouts' ? 'active' : ''; ?>">
                     <i class="bi bi-calendar-check"></i> Тренування
                 </a>
@@ -91,23 +141,38 @@
                 <a href="/dashboard.php?page=google-fit" class="nav-link <?php echo ($_GET['page'] ?? '') === 'google-fit' ? 'active' : ''; ?>">
                     <i class="bi bi-google"></i> Google Fit
                 </a>
-                <a href="/dashboard.php?page=profile" class="nav-link <?php echo ($_GET['page'] ?? '') === 'profile' ? 'active' : ''; ?>">
-                    <i class="bi bi-gear"></i> Налаштування
-                </a>
-                <hr>
-                <a href="/logout.php" class="nav-link text-danger">
-                    <i class="bi bi-box-arrow-right"></i> Вийти
-                </a>
             <?php else: ?>
-                <a href="/login.php" class="nav-link">
-                    <i class="bi bi-box-arrow-in-right"></i> Вхід
+                <a href="/dashboard.php?page=clients" class="nav-link <?php echo ($_GET['page'] ?? '') === 'clients' ? 'active' : ''; ?>">
+                    <i class="bi bi-people"></i> Клієнти
                 </a>
-                <a href="/register.php" class="nav-link">
-                    <i class="bi bi-person-plus"></i> Реєстрація
+                <a href="/dashboard.php?page=programs" class="nav-link <?php echo ($_GET['page'] ?? '') === 'programs' ? 'active' : ''; ?>">
+                    <i class="bi bi-file-text"></i> Програми
+                </a>
+                <a href="/dashboard.php?page=messages" class="nav-link <?php echo ($_GET['page'] ?? '') === 'messages' ? 'active' : ''; ?>">
+                    <i class="bi bi-chat"></i> Повідомлення
+                </a>
+                <a href="/dashboard.php?page=schedule" class="nav-link <?php echo ($_GET['page'] ?? '') === 'schedule' ? 'active' : ''; ?>">
+                    <i class="bi bi-calendar"></i> Розклад
                 </a>
             <?php endif; ?>
+            
+            <a href="/dashboard.php?page=profile" class="nav-link <?php echo ($_GET['page'] ?? '') === 'profile' ? 'active' : ''; ?>">
+                <i class="bi bi-gear"></i> Налаштування
+            </a>
+            
+            <?php if ($_SESSION['user_role'] === 'admin'): ?>
+                <a href="/admin/index.php" class="nav-link">
+                    <i class="bi bi-shield-lock"></i> Адмін-панель
+                </a>
+            <?php endif; ?>
+            
+            <hr>
+            <a href="/logout.php" class="nav-link text-danger">
+                <i class="bi bi-box-arrow-right"></i> Вийти
+            </a>
         </div>
     </div>
+    <?php endif; ?>
 
     <!-- Основной контент -->
     <main class="main-content" style="<?php echo isset($_SESSION['user_id']) ? 'padding-bottom: 80px;' : ''; ?>">
@@ -140,7 +205,7 @@
         <?php echo $content; ?>
     </main>
 
-    <!-- Mobile Bottom Navigation -->
+    <!-- Mobile Bottom Navigation - только для авторизованных -->
     <?php if (isset($_SESSION['user_id'])): ?>
     <nav class="mobile-bottom-nav d-md-none">
         <div class="container-fluid px-0">
@@ -197,11 +262,59 @@
     </nav>
     <?php endif; ?>
 
-    <!-- Footer (скрыт на мобильных) -->
-    <footer class="bg-dark text-white py-4 mt-auto d-none d-md-block">
-        <!-- ... существующий код ... -->
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-auto">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-4 text-center text-md-start">
+                    <span class="fw-bold fs-5">
+                        <i class="bi bi-heart-pulse-fill text-primary"></i> FitPlatform
+                    </span>
+                    <small class="text-white-50 d-block mt-1">© <?php echo date('Y'); ?> Всі права захищено</small>
+                </div>
+                
+                <div class="col-md-4 text-center">
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="#" class="text-white-50 text-decoration-none hover-effect">
+                            <i class="bi bi-twitter-x fs-5"></i>
+                        </a>
+                        <a href="#" class="text-white-50 text-decoration-none hover-effect">
+                            <i class="bi bi-instagram fs-5"></i>
+                        </a>
+                        <a href="#" class="text-white-50 text-decoration-none hover-effect">
+                            <i class="bi bi-youtube fs-5"></i>
+                        </a>
+                        <a href="#" class="text-white-50 text-decoration-none hover-effect">
+                            <i class="bi bi-telegram fs-5"></i>
+                        </a>
+                        <a href="#" class="text-white-50 text-decoration-none hover-effect">
+                            <i class="bi bi-github fs-5"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 text-center text-md-end">
+                    <div class="d-flex flex-column align-items-center align-items-md-end">
+                        <span class="text-white-50 small">
+                            <i class="bi bi-code-slash text-primary"></i> Розроблено з ❤️
+                        </span>
+                        <span class="text-white fw-semibold">
+                            <i class="bi bi-person-heart text-primary"></i> stasokilend
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <hr class="border-secondary opacity-25 my-3">
+            
+            <div class="row text-center text-white-50 small">
+                <div class="col-12">
+                    <span>FitPlatform — твій шлях до здорового тіла та гарного настрою 💪</span>
+                </div>
+            </div>
+        </div>
     </footer>
-
+    
     <!-- Контейнер для уведомлений -->
     <div id="notificationContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999;"></div>
 

@@ -38,7 +38,7 @@ $isCompleted = $workout['status'] === 'completed';
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="/assets/css/style.css" rel="stylesheet">
     <style>
-        /* Фиксированный таймер внизу экрана */
+        /* ===== ТАЙМЕР ===== */
         .timer-fixed {
             position: fixed;
             bottom: 0;
@@ -61,13 +61,6 @@ $isCompleted = $workout['status'] === 'completed';
             text-shadow: 0 0 20px rgba(108, 99, 255, 0.3);
             transition: color 0.3s ease;
             line-height: 1;
-        }
-
-        .timer-fixed .timer-label {
-            color: rgba(255, 255, 255, 0.5);
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
 
         .timer-fixed .btn-timer {
@@ -119,10 +112,6 @@ $isCompleted = $workout['status'] === 'completed';
             color: #fff;
         }
 
-        .timer-fixed .btn-timer-reset:active {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
         .timer-fixed .timer-stats {
             color: rgba(255, 255, 255, 0.5);
             font-size: 0.75rem;
@@ -155,12 +144,98 @@ $isCompleted = $workout['status'] === 'completed';
             color: rgba(255, 255, 255, 0.5);
         }
 
-        /* Отступ для контента */
+        .timer-fixed .timer-display.running {
+            animation: pulseTimer 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseTimer {
+            0%, 100% { text-shadow: 0 0 20px rgba(108, 99, 255, 0.3); }
+            50% { text-shadow: 0 0 40px rgba(108, 99, 255, 0.6), 0 0 60px rgba(108, 99, 255, 0.2); }
+        }
+
+        /* ===== МОБИЛЬНАЯ ВЕРСИЯ ТАЙМЕРА (сверху) ===== */
+        .timer-mobile {
+            display: none;
+            position: sticky;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+            border-bottom: 2px solid rgba(108, 99, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            z-index: 1040;
+            padding: 8px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        .timer-mobile .timer-display {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            font-size: 1.6rem;
+            color: #FFFFFF;
+            letter-spacing: 1px;
+            text-shadow: 0 0 20px rgba(108, 99, 255, 0.3);
+            line-height: 1;
+        }
+
+        .timer-mobile .btn-timer {
+            border-radius: 50px;
+            padding: 4px 12px;
+            font-weight: 600;
+            font-size: 0.65rem;
+            transition: all 0.3s ease;
+            border: none;
+            min-width: 60px;
+        }
+
+        .timer-mobile .btn-timer-start {
+            background: linear-gradient(135deg, #00D2A0 0%, #00A87E 100%);
+            color: #fff;
+        }
+
+        .timer-mobile .btn-timer-pause {
+            background: linear-gradient(135deg, #FFB347 0%, #FF8C00 100%);
+            color: #fff;
+        }
+
+        .timer-mobile .btn-timer-reset {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            min-width: 50px;
+        }
+
+        .timer-mobile .timer-status {
+            font-size: 0.6rem;
+            padding: 2px 10px;
+            border-radius: 50px;
+            display: inline-block;
+        }
+
+        .timer-mobile .timer-status.running {
+            background: rgba(0, 210, 160, 0.2);
+            color: #00D2A0;
+        }
+
+        .timer-mobile .timer-status.paused {
+            background: rgba(255, 179, 71, 0.2);
+            color: #FFB347;
+        }
+
+        .timer-mobile .timer-status.stopped {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .timer-mobile .timer-display.running {
+            animation: pulseTimer 2s ease-in-out infinite;
+        }
+
+        /* ===== ОБЩИЕ СТИЛИ ===== */
         .workout-content {
             padding-bottom: 100px;
         }
 
-        /* Стили для упражнений */
         .exercise-item {
             cursor: pointer;
             transition: all 0.3s ease;
@@ -182,59 +257,65 @@ $isCompleted = $workout['status'] === 'completed';
             color: #198754;
         }
 
-        /* Мобильная адаптация */
+        .exercise-item .exercise-number {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* ===== АДАПТАЦИЯ ===== */
         @media (max-width: 768px) {
-            .timer-fixed .timer-display {
-                font-size: 1.8rem;
+            .timer-fixed {
+                display: none !important;
             }
-            .timer-fixed .btn-timer {
-                font-size: 0.7rem;
-                padding: 5px 12px;
-                min-width: 70px;
-            }
-            .timer-fixed .timer-stats {
-                font-size: 0.6rem;
+            .timer-mobile {
+                display: block !important;
             }
             .workout-content {
-                padding-bottom: 120px;
-            }
-            .timer-fixed .timer-label {
-                font-size: 0.6rem;
+                padding-top: 10px;
+                padding-bottom: 20px;
             }
         }
 
-        @media (max-width: 576px) {
-            .timer-fixed .timer-display {
-                font-size: 1.4rem;
-                letter-spacing: 1px;
+        @media (min-width: 769px) {
+            .timer-fixed {
+                display: block !important;
             }
-            .timer-fixed .btn-timer {
-                font-size: 0.6rem;
-                padding: 4px 10px;
-                min-width: 60px;
+            .timer-mobile {
+                display: none !important;
             }
-            .workout-content {
-                padding-bottom: 140px;
-            }
-            .timer-fixed .timer-stats {
-                font-size: 0.55rem;
-            }
-        }
-
-        /* Анимация пульса для running состояния */
-        .timer-fixed .timer-display.running {
-            animation: pulseTimer 2s ease-in-out infinite;
-        }
-
-        @keyframes pulseTimer {
-            0%, 100% { text-shadow: 0 0 20px rgba(108, 99, 255, 0.3); }
-            50% { text-shadow: 0 0 40px rgba(108, 99, 255, 0.6), 0 0 60px rgba(108, 99, 255, 0.2); }
         }
     </style>
 </head>
 <body>
 
-<div class="container-fluid workout-content" style="padding-bottom: 100px;">
+<!-- ===== МОБИЛЬНЫЙ ТАЙМЕР (СВЕРХУ) ===== -->
+<div class="timer-mobile" id="timerMobile">
+    <div class="container-fluid px-2">
+        <div class="row align-items-center">
+            <div class="col-4 text-start">
+                <div class="timer-display" id="timerDisplayMobile">00:00:00</div>
+                <span class="timer-status stopped" id="timerStatusMobile">⏸️</span>
+            </div>
+            <div class="col-8 text-end">
+                <div class="d-flex gap-1 justify-content-end flex-wrap">
+                    <button class="btn btn-timer btn-timer-start" id="timerMainBtnMobile">
+                        <i class="bi bi-play-fill"></i>
+                    </button>
+                    <button class="btn btn-timer btn-timer-reset" id="timerResetBtnMobile">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ОСНОВНОЙ КОНТЕНТ ===== -->
+<div class="container-fluid workout-content">
     <!-- Заголовок -->
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-3 mb-4 border-bottom">
         <div>
@@ -314,7 +395,7 @@ $isCompleted = $workout['status'] === 'completed';
                          data-exercise="<?php echo $ex['id']; ?>">
                         <div class="d-flex align-items-center">
                             <div class="me-3">
-                                <span class="badge bg-secondary rounded-circle" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <span class="badge bg-secondary rounded-circle exercise-number">
                                     <?php echo $index + 1; ?>
                                 </span>
                             </div>
@@ -334,7 +415,7 @@ $isCompleted = $workout['status'] === 'completed';
                                         </small>
                                     </div>
                                     <div class="text-end">
-                                        <span class="badge bg-<?php echo $ex['is_completed'] ? 'success' : 'secondary'; ?> rounded-pill">
+                                        <span class="badge bg-<?php echo $ex['is_completed'] ? 'success' : 'secondary'; ?> rounded-pill status-badge">
                                             <?php echo $ex['is_completed'] ? '✅ Виконано' : '⏳ Очікує'; ?>
                                         </span>
                                     </div>
@@ -375,11 +456,10 @@ $isCompleted = $workout['status'] === 'completed';
     </div>
 </div>
 
-<!-- ===== ФИКСИРОВАННЫЙ ТАЙМЕР ===== -->
+<!-- ===== ДЕСКТОПНЫЙ ТАЙМЕР (ВНИЗУ) ===== -->
 <div class="timer-fixed" id="timerCard">
     <div class="container">
         <div class="row align-items-center">
-            <!-- Время -->
             <div class="col-md-4 col-lg-3 text-center text-md-start">
                 <div class="d-flex align-items-center gap-3">
                     <div>
@@ -390,8 +470,6 @@ $isCompleted = $workout['status'] === 'completed';
                     </div>
                 </div>
             </div>
-
-            <!-- Кнопки -->
             <div class="col-md-5 col-lg-6 text-center my-2 my-md-0">
                 <div class="d-flex gap-2 justify-content-center flex-wrap">
                     <button class="btn btn-timer btn-timer-start" id="timerMainBtn">
@@ -402,8 +480,6 @@ $isCompleted = $workout['status'] === 'completed';
                     </button>
                 </div>
             </div>
-
-            <!-- Статистика -->
             <div class="col-md-3 text-center text-md-end">
                 <div class="timer-stats">
                     <div>Час тренування: <span id="workoutTime">00:00:00</span></div>
@@ -442,17 +518,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     this.classList.toggle('completed');
                     
-                    const badge = this.querySelector('.badge');
+                    // Обновляем только статус-бейдж (номер не трогаем)
+                    const badge = this.querySelector('.status-badge');
                     if (badge) {
                         if (this.classList.contains('completed')) {
                             badge.textContent = '✅ Виконано';
-                            badge.className = 'badge bg-success rounded-pill';
+                            badge.className = 'badge bg-success rounded-pill status-badge';
                             completedCount++;
                             playSound('complete');
                             showToast('✅ Вправу виконано!', 'success');
                         } else {
                             badge.textContent = '⏳ Очікує';
-                            badge.className = 'badge bg-secondary rounded-pill';
+                            badge.className = 'badge bg-secondary rounded-pill status-badge';
                             completedCount--;
                             showToast('🔄 Виконання скасовано', 'info');
                         }
@@ -503,69 +580,125 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch(e) {}
     }
 
-    // ===== ТАЙМЕР =====
-let timerInterval = null;
-let isRunning = false;
-let isPaused = false;
-let seconds = 0;
-let workoutSeconds = 0;
+    // ===== ТАЙМЕР (ОБЩАЯ ЛОГИКА ДЛЯ ДВУХ ВЕРСИЙ) =====
+    let timerInterval = null;
+    let isRunning = false;
+    let isPaused = false;
+    let seconds = 0;
+    let workoutSeconds = 0;
 
-const timerDisplay = document.getElementById('timerDisplay');
-const timerStatus = document.getElementById('timerStatus');
-const timerMainBtn = document.getElementById('timerMainBtn');
-const timerResetBtn = document.getElementById('timerResetBtn');
-const workoutTimeDisplay = document.getElementById('workoutTime');
+    // Элементы десктопного таймера
+    const timerDisplay = document.getElementById('timerDisplay');
+    const timerStatus = document.getElementById('timerStatus');
+    const timerMainBtn = document.getElementById('timerMainBtn');
+    const timerResetBtn = document.getElementById('timerResetBtn');
+    const workoutTimeDisplay = document.getElementById('workoutTime');
 
-function formatTime(totalSeconds) {
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
+    // Элементы мобильного таймера
+    const timerDisplayMobile = document.getElementById('timerDisplayMobile');
+    const timerStatusMobile = document.getElementById('timerStatusMobile');
+    const timerMainBtnMobile = document.getElementById('timerMainBtnMobile');
+    const timerResetBtnMobile = document.getElementById('timerResetBtnMobile');
 
-function updateDisplay() {
-    timerDisplay.textContent = formatTime(seconds);
-    workoutTimeDisplay.textContent = formatTime(workoutSeconds);
-}
-
-function updateStatusUI(status, label) {
-    timerStatus.textContent = label;
-    timerStatus.className = 'timer-status ' + status;
-    
-    if (status === 'running') {
-        timerDisplay.classList.add('running');
-    } else {
-        timerDisplay.classList.remove('running');
+    function formatTime(totalSeconds) {
+        const h = Math.floor(totalSeconds / 3600);
+        const m = Math.floor((totalSeconds % 3600) / 60);
+        const s = totalSeconds % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     }
-}
 
-function updateMainButton(mode) {
-    if (mode === 'start') {
-        timerMainBtn.innerHTML = '<i class="bi bi-play-fill"></i> Старт';
-        timerMainBtn.className = 'btn btn-timer btn-timer-start';
-    } else if (mode === 'pause') {
-        timerMainBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Пауза';
-        timerMainBtn.className = 'btn btn-timer btn-timer-pause';
-    } else if (mode === 'resume') {
-        timerMainBtn.innerHTML = '<i class="bi bi-play-fill"></i> Продовжити';
-        timerMainBtn.className = 'btn btn-timer btn-timer-start';
+    function updateDisplay() {
+        const timeStr = formatTime(seconds);
+        const workoutStr = formatTime(workoutSeconds);
+        
+        // Десктоп
+        if (timerDisplay) timerDisplay.textContent = timeStr;
+        if (workoutTimeDisplay) workoutTimeDisplay.textContent = workoutStr;
+        
+        // Мобильный
+        if (timerDisplayMobile) timerDisplayMobile.textContent = timeStr;
     }
-}
 
-function startTimer() {
-    // Если таймер уже запущен и НЕ на паузе — ставим на паузу
-    if (isRunning && !isPaused) {
-        pauseTimer();
-        return;
+    function updateStatusUI(status, label) {
+        // Десктоп
+        if (timerStatus) {
+            timerStatus.textContent = label;
+            timerStatus.className = 'timer-status ' + status;
+            if (status === 'running') {
+                timerDisplay.classList.add('running');
+            } else {
+                timerDisplay.classList.remove('running');
+            }
+        }
+        
+        // Мобильный
+        if (timerStatusMobile) {
+            const mobileLabel = status === 'running' ? '▶️' : status === 'paused' ? '⏸️' : '⏸️';
+            timerStatusMobile.textContent = mobileLabel;
+            timerStatusMobile.className = 'timer-status ' + status;
+            if (status === 'running') {
+                timerDisplayMobile.classList.add('running');
+            } else {
+                timerDisplayMobile.classList.remove('running');
+            }
+        }
     }
-    
-    // Если на паузе — продолжаем
-    if (isPaused) {
-        isPaused = false;
+
+    function updateMainButton(mode) {
+        // Десктоп
+        if (timerMainBtn) {
+            if (mode === 'start') {
+                timerMainBtn.innerHTML = '<i class="bi bi-play-fill"></i> Старт';
+                timerMainBtn.className = 'btn btn-timer btn-timer-start';
+            } else if (mode === 'pause') {
+                timerMainBtn.innerHTML = '<i class="bi bi-pause-fill"></i> Пауза';
+                timerMainBtn.className = 'btn btn-timer btn-timer-pause';
+            } else if (mode === 'resume') {
+                timerMainBtn.innerHTML = '<i class="bi bi-play-fill"></i> Продовжити';
+                timerMainBtn.className = 'btn btn-timer btn-timer-start';
+            }
+        }
+        
+        // Мобильный
+        if (timerMainBtnMobile) {
+            if (mode === 'start') {
+                timerMainBtnMobile.innerHTML = '<i class="bi bi-play-fill"></i>';
+                timerMainBtnMobile.className = 'btn btn-timer btn-timer-start';
+            } else if (mode === 'pause') {
+                timerMainBtnMobile.innerHTML = '<i class="bi bi-pause-fill"></i>';
+                timerMainBtnMobile.className = 'btn btn-timer btn-timer-pause';
+            } else if (mode === 'resume') {
+                timerMainBtnMobile.innerHTML = '<i class="bi bi-play-fill"></i>';
+                timerMainBtnMobile.className = 'btn btn-timer btn-timer-start';
+            }
+        }
+    }
+
+    function startTimer() {
+        if (isRunning && !isPaused) {
+            pauseTimer();
+            return;
+        }
+        
+        if (isPaused) {
+            isPaused = false;
+            updateStatusUI('running', '▶️ В процесі');
+            updateMainButton('pause');
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            timerInterval = setInterval(function() {
+                seconds++;
+                workoutSeconds++;
+                updateDisplay();
+            }, 1000);
+            return;
+        }
+        
+        isRunning = true;
         updateStatusUI('running', '▶️ В процесі');
         updateMainButton('pause');
         
-        // Запускаем интервал заново
         if (timerInterval) {
             clearInterval(timerInterval);
         }
@@ -574,64 +707,47 @@ function startTimer() {
             workoutSeconds++;
             updateDisplay();
         }, 1000);
-        return;
     }
-    
-    // Первый запуск
-    isRunning = true;
-    updateStatusUI('running', '▶️ В процесі');
-    updateMainButton('pause');
-    
-    if (timerInterval) {
-        clearInterval(timerInterval);
+
+    function pauseTimer() {
+        if (!isRunning || isPaused) return;
+        
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        
+        isPaused = true;
+        updateStatusUI('paused', '⏸️ На паузі');
+        updateMainButton('resume');
     }
-    timerInterval = setInterval(function() {
-        seconds++;
-        workoutSeconds++;
+
+    function resetTimer() {
+        if (!confirm('Скинути таймер?')) return;
+        
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        
+        isRunning = false;
+        isPaused = false;
+        seconds = 0;
+        workoutSeconds = 0;
+        
+        updateStatusUI('stopped', '⏸️ Не запущено');
+        updateMainButton('start');
         updateDisplay();
-    }, 1000);
-}
-
-function pauseTimer() {
-    // Если таймер не запущен или уже на паузе — ничего не делаем
-    if (!isRunning || isPaused) return;
-    
-    // Останавливаем интервал
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
+        showToast('Таймер скинуто', 'info');
     }
-    
-    isPaused = true;
-    updateStatusUI('paused', '⏸️ На паузі');
-    updateMainButton('resume');
-}
 
-function resetTimer() {
-    if (!confirm('Скинути таймер?')) return;
-    
-    // Останавливаем интервал
-    if (timerInterval) {
-        clearInterval(timerInterval);
-        timerInterval = null;
-    }
-    
-    isRunning = false;
-    isPaused = false;
-    seconds = 0;
-    workoutSeconds = 0;
-    
-    updateStatusUI('stopped', '⏸️ Не запущено');
-    updateMainButton('start');
-    updateDisplay();
-    showToast('Таймер скинуто', 'info');
-}
+    // Обработчики для десктопной версии
+    if (timerMainBtn) timerMainBtn.addEventListener('click', startTimer);
+    if (timerResetBtn) timerResetBtn.addEventListener('click', resetTimer);
 
-// Обработчик основной кнопки
-timerMainBtn.addEventListener('click', startTimer);
-
-// Обработчик сброса
-timerResetBtn.addEventListener('click', resetTimer);
+    // Обработчики для мобильной версии
+    if (timerMainBtnMobile) timerMainBtnMobile.addEventListener('click', startTimer);
+    if (timerResetBtnMobile) timerResetBtnMobile.addEventListener('click', resetTimer);
 
     // ===== ЗАВЕРШЕНИЕ ТРЕНИРОВКИ =====
     document.getElementById('completeWorkoutBtn')?.addEventListener('click', function() {

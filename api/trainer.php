@@ -356,6 +356,7 @@ if ($action === 'update_program') {
     }
     
     // Проверяем, что программа принадлежит тренеру
+    global $pdo;
     $stmt = $pdo->prepare("SELECT id FROM trainer_programs WHERE id = ? AND trainer_id = ?");
     $stmt->execute([$programId, $userId]);
     if (!$stmt->fetch()) {
@@ -408,5 +409,122 @@ if ($action === 'update_program') {
     
     echo json_encode(['success' => true]);
     exit;
+
+    // --- ЗАПРОС ПРОГРАММЫ ---
+if ($action === 'request_program') {
+    $programId = (int)($_POST['program_id'] ?? 0);
+    
+    if (!$programId) {
+        echo json_encode(['success' => false, 'error' => 'ID програми не вказано']);
+        exit;
+    }
+    
+    // Проверяем, что программа существует и публична
+    global $pdo;
+    $stmt = $pdo->prepare("SELECT trainer_id, name FROM trainer_programs WHERE id = ? AND is_public = 1 AND is_active = 1");
+    $stmt->execute([$programId]);
+    $program = $stmt->fetch();
+    
+    if (!$program) {
+        echo json_encode(['success' => false, 'error' => 'Програма не знайдена']);
+        exit;
+    }
+    
+    // Проверяем, не назначена ли уже
+    $stmt = $pdo->prepare("SELECT id FROM client_programs WHERE client_id = ? AND program_id = ? AND status = 'active'");
+    $stmt->execute([$userId, $programId]);
+    if ($stmt->fetch()) {
+        echo json_encode(['success' => false, 'error' => 'Ця програма вже призначена вам']);
+        exit;
+    }
+    
+    // Проверяем, есть ли уже запрос
+    $stmt = $pdo->prepare("SELECT id FROM client_programs WHERE client_id = ? AND program_id = ? AND status = 'pending'");
+    $stmt->execute([$userId, $programId]);
+    if ($stmt->fetch()) {
+        echo json_encode(['success' => false, 'error' => 'Запит на цю програму вже надіслано']);
+        exit;
+    }
+    
+    // Создаем запрос
+    $stmt = $pdo->prepare("
+        INSERT INTO client_programs (client_id, program_id, trainer_id, status)
+        VALUES (?, ?, ?, 'pending')
+    ");
+    $success = $stmt->execute([$userId, $programId, $program['trainer_id']]);
+    
+    if ($success) {
+        // Создаем уведомление для тренера
+        require_once __DIR__ . '/../controllers/NotificationController.php';
+        $notification = new NotificationController($program['trainer_id']);
+        $notification->createFromTemplate('new_program_request', [
+            'client_name' => $_SESSION['user_name'] ?? 'Користувач',
+            'program_name' => $program['name']
+        ]);
+        
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Помилка створення запиту']);
+    }
+    exit;
+}
+
+// --- ПРИНЯТИЕ/ОТКЛОНЕНИЕ ЗАПРОСА ПРОГРАММЫ (для тренера) ---
+if ($action === 'handle_program_request') {
+    $requestId = (int)($_POST['request_id'] ?? 0);
+    $status = $_POST['status'] ?? ''; // 'approved' или 'rejected'
+    
+    if (!$requestId || !in_array($status, ['approved', 'rejected'])) {
+        echo json_encode(['success' => false, 'error' => 'Недостатньо даних']);
+        exit;
+    }
+    
+    global $pdo;
+    
+    // Проверяем, что запрос принадлежит тренеру
+    $stmt = $pdo->prepare("
+        SELECT cp.*, u.full_name as client_name, tp.name as program_name
+        FROM client_programs cp
+        JOIN users u ON cp.client_id = u.id
+        JOIN trainer_programs tp ON cp.program_id = tp.id
+        WHERE cp.id = ? AND cp.trainer_id = ? AND cp.status = 'pending'
+    ");
+    $stmt->execute([$requestId, $userId]);
+    $request = $stmt->fetch();
+    
+    if (!$request) {
+        echo json_encode(['success' => false, 'error' => 'Запит не знайдено']);
+        exit;
+    }
+    
+    if ($status === 'approved') {
+        $stmt = $this->pdo->prepare("
+            UPDATE client_programs 
+            SET status = 'active', start_date = CURDATE()
+            WHERE id = ?
+        ");
+        $success = $stmt->execute([$requestId]);
+        
+        if ($success) {
+            // Уведомление пользователю
+            require_once __DIR__ . '/../controllers/NotificationController.php';
+            $notification = new NotificationController($request['client_id']);
+            $notification->createFromTemplate('program_approved', [
+                'program_name' => $request['program_name'],
+                'trainer_name' => $_SESSION['user_name']
+            ]);
+        }
+    } else {
+        $stmt = $this->pdo->prepare("
+            UPDATE client_programs 
+            SET status = 'cancelled'
+            WHERE id = ?
+        ");
+        $success = $stmt->execute([$requestId]);
+    }
+    
+    echo json_encode(['success' => $success]);
+    exit;
+}
 }
 ?>

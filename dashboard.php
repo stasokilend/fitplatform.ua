@@ -96,6 +96,12 @@ ob_start();
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'trainer-programs' ? 'active' : ''; ?>" 
+                            href="/dashboard.php?page=trainer-programs">
+                                <i class="bi bi-file-text"></i> Програми тренерів
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'achievements' ? 'active' : ''; ?>" 
                                href="/dashboard.php?page=achievements">
                                 <i class="bi bi-trophy"></i> Досягнення

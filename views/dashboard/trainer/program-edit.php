@@ -37,6 +37,18 @@ $groupedExercises = [];
 foreach ($allExercises as $ex) {
     $groupedExercises[$ex['muscle_group']][] = $ex;
 }
+
+$difficultyLabels = [
+    'beginner' => 'Початківець',
+    'intermediate' => 'Середній',
+    'advanced' => 'Просунутий'
+];
+
+$difficultyColors = [
+    'beginner' => 'success',
+    'intermediate' => 'warning',
+    'advanced' => 'danger'
+];
 ?>
 
 <div class="fade-in-up">
@@ -121,7 +133,7 @@ foreach ($allExercises as $ex) {
                                             <?php foreach ($items as $ex): ?>
                                                 <option value="<?php echo $ex['id']; ?>">
                                                     <?php echo htmlspecialchars($ex['name']); ?> 
-                                                    (<?php echo $ex['difficulty']; ?>)
+                                                    (<?php echo $difficultyLabels[$ex['difficulty']]; ?>)
                                                 </option>
                                             <?php endforeach; ?>
                                         </optgroup>
@@ -133,7 +145,7 @@ foreach ($allExercises as $ex) {
                             </div>
                             <small class="text-muted">
                                 <i class="bi bi-info-circle"></i> 
-                                Для каждого упражнения можно указать день, количество подходов и повторений
+                                Натисніть <strong>✏️</strong> для редагування параметрів вправи
                             </small>
                         </div>
                         
@@ -158,9 +170,67 @@ foreach ($allExercises as $ex) {
     </div>
 </div>
 
+<!-- ===== МОДАЛЬНОЕ ОКНО ДЛЯ РЕДАКТИРОВАНИЯ УПРАЖНЕНИЯ ===== -->
+<div class="modal fade" id="exerciseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil text-primary"></i> Редагувати вправу
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="exerciseModalForm">
+                    <input type="hidden" id="editExerciseIndex" value="">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Вправа</label>
+                        <p class="form-control-static fw-bold" id="editExerciseName">-</p>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">День тренування</label>
+                            <select id="editExerciseDay" class="form-select">
+                                <?php for ($i = 1; $i <= 7; $i++): ?>
+                                    <option value="<?php echo $i; ?>">День <?php echo $i; ?></option>
+                                <?php endfor; ?>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Підходи</label>
+                            <input type="number" id="editExerciseSets" class="form-control" min="1" max="10" value="3">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Повторення</label>
+                            <input type="number" id="editExerciseReps" class="form-control" min="1" max="50" value="10">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Відпочинок (сек)</label>
+                            <input type="number" id="editExerciseRest" class="form-control" min="10" max="300" value="60">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Нотатки до вправи</label>
+                            <textarea id="editExerciseNotes" class="form-control" rows="2" placeholder="Техніка виконання, поради..."></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                <button type="button" class="btn btn-primary" id="saveExerciseChanges">
+                    <i class="bi bi-save"></i> Зберегти
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let addedExercises = [];
 let exerciseIdCounter = 0;
+let currentEditIndex = -1;
 
 document.addEventListener('DOMContentLoaded', function() {
     // ===== ЗАГРУЗКА СУЩЕСТВУЮЩИХ УПРАЖНЕНИЙ =====
@@ -230,33 +300,43 @@ document.addEventListener('DOMContentLoaded', function() {
         updatePreview();
     };
     
-    // ===== РЕДАКТИРОВАНИЕ УПРАЖНЕНИЯ =====
+    // ===== РЕДАКТИРОВАНИЕ УПРАЖНЕНИЯ (ОТКРЫТИЕ МОДАЛЬНОГО ОКНА) =====
     window.editExercise = function(index) {
         const ex = addedExercises[index];
-        // Простое редактирование через prompt
-        const newDay = prompt('День тренировки (1-7):', ex.day);
-        if (newDay !== null) {
-            ex.day = parseInt(newDay) || 1;
-        }
-        const newSets = prompt('Количество подходов:', ex.sets);
-        if (newSets !== null) {
-            ex.sets = parseInt(newSets) || 3;
-        }
-        const newReps = prompt('Количество повторений:', ex.reps);
-        if (newReps !== null) {
-            ex.reps = parseInt(newReps) || 10;
-        }
-        const newRest = prompt('Время отдыха (сек):', ex.rest_seconds);
-        if (newRest !== null) {
-            ex.rest_seconds = parseInt(newRest) || 60;
-        }
-        const newNotes = prompt('Заметки к упражнению:', ex.notes || '');
-        if (newNotes !== null) {
-            ex.notes = newNotes;
-        }
+        currentEditIndex = index;
+        
+        document.getElementById('editExerciseIndex').value = index;
+        document.getElementById('editExerciseName').textContent = ex.name;
+        document.getElementById('editExerciseDay').value = ex.day;
+        document.getElementById('editExerciseSets').value = ex.sets;
+        document.getElementById('editExerciseReps').value = ex.reps;
+        document.getElementById('editExerciseRest').value = ex.rest_seconds;
+        document.getElementById('editExerciseNotes').value = ex.notes || '';
+        
+        const modal = new bootstrap.Modal(document.getElementById('exerciseModal'));
+        modal.show();
+    };
+    
+    // ===== СОХРАНЕНИЕ ИЗМЕНЕНИЙ В УПРАЖНЕНИИ =====
+    document.getElementById('saveExerciseChanges').addEventListener('click', function() {
+        const index = parseInt(document.getElementById('editExerciseIndex').value);
+        if (index < 0 || index >= addedExercises.length) return;
+        
+        addedExercises[index].day = parseInt(document.getElementById('editExerciseDay').value) || 1;
+        addedExercises[index].sets = parseInt(document.getElementById('editExerciseSets').value) || 3;
+        addedExercises[index].reps = parseInt(document.getElementById('editExerciseReps').value) || 10;
+        addedExercises[index].rest_seconds = parseInt(document.getElementById('editExerciseRest').value) || 60;
+        addedExercises[index].notes = document.getElementById('editExerciseNotes').value || '';
+        
         renderExerciseList();
         updatePreview();
-    };
+        
+        // Закрываем модальное окно
+        const modal = bootstrap.Modal.getInstance(document.getElementById('exerciseModal'));
+        modal.hide();
+        
+        showToast('Вправу оновлено!', 'success');
+    });
     
     // ===== СОХРАНЕНИЕ ПРОГРАММЫ =====
     document.getElementById('programEditForm').addEventListener('submit', function(e) {
@@ -320,28 +400,26 @@ function renderExerciseList() {
     
     let html = '<div class="list-group">';
     addedExercises.forEach((ex, index) => {
+        const difficultyColor = ex.difficulty === 'advanced' ? 'danger' : (ex.difficulty === 'intermediate' ? 'warning' : 'success');
         html += `
             <div class="list-group-item">
                 <div class="d-flex justify-content-between align-items-start">
                     <div class="flex-grow-1">
-                        <div class="d-flex align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="badge bg-secondary">${index + 1}</span>
                             <strong>${ex.name}</strong>
-                            <span class="badge bg-${ex.difficulty === 'advanced' ? 'danger' : (ex.difficulty === 'intermediate' ? 'warning' : 'success')}">${ex.difficulty}</span>
+                            <span class="badge bg-${difficultyColor}">${ex.difficulty}</span>
                             <span class="badge bg-primary">День ${ex.day}</span>
+                            <span class="badge bg-info">${ex.sets}×${ex.reps}</span>
+                            <span class="badge bg-secondary">${ex.rest_seconds}с</span>
                         </div>
-                        <div class="small text-muted mt-1">
-                            <i class="bi bi-arrow-repeat"></i> ${ex.sets}×${ex.reps}
-                            <span class="mx-2">•</span>
-                            <i class="bi bi-clock"></i> ${ex.rest_seconds} с
-                            ${ex.notes ? `<span class="mx-2">•</span> <i class="bi bi-pencil"></i> ${ex.notes}` : ''}
-                        </div>
+                        ${ex.notes ? `<div class="small text-muted mt-1"><i class="bi bi-pencil"></i> ${ex.notes}</div>` : ''}
                     </div>
                     <div class="d-flex gap-1 flex-shrink-0">
-                        <button class="btn btn-sm btn-outline-primary" onclick="editExercise(${index})">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editExercise(${index})" title="Редагувати">
                             <i class="bi bi-pencil"></i>
                         </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="removeExercise(${index})">
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeExercise(${index})" title="Видалити">
                             <i class="bi bi-x"></i>
                         </button>
                     </div>

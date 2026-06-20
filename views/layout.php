@@ -288,6 +288,9 @@
                             <i class="bi bi-telegram fs-5"></i>
                         </a>
                         <a href="#" class="text-white-50 text-decoration-none hover-effect">
+                            <i class="bi bi-tiktok fs-5"></i>
+                        </a>
+                        <a href="#" class="text-white-50 text-decoration-none hover-effect">
                             <i class="bi bi-github fs-5"></i>
                         </a>
                     </div>

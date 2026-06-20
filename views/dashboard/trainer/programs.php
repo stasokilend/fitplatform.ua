@@ -53,9 +53,13 @@ $allExercises = $stmt->fetchAll();
                         </div>
                         <div class="card-footer bg-transparent border-0">
                             <div class="d-flex gap-2">
+                                <a href="/dashboard.php?page=program-detail&id=<?php echo $program['id']; ?>" 
+                                class="btn btn-sm btn-outline-primary flex-grow-1">
+                                    <i class="bi bi-eye"></i> Перегляд
+                                </a>
                                 <a href="/dashboard.php?page=program-edit&id=<?php echo $program['id']; ?>" 
-                                   class="btn btn-sm btn-outline-primary flex-grow-1">
-                                    <i class="bi bi-pencil"></i> Редагувати
+                                class="btn btn-sm btn-outline-warning">
+                                    <i class="bi bi-pencil"></i>
                                 </a>
                                 <button class="btn btn-sm btn-outline-danger" onclick="deleteProgram(<?php echo $program['id']; ?>)">
                                     <i class="bi bi-trash"></i>

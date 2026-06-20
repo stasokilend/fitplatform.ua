@@ -338,4 +338,75 @@ if ($action === 'get_notifications') {
 }
 
 echo json_encode(['success' => false, 'error' => 'Невідома дія']);
+
+// --- ОБНОВЛЕНИЕ ПРОГРАММЫ ---
+if ($action === 'update_program') {
+    $programId = (int)($_POST['program_id'] ?? 0);
+    $name = trim($_POST['name'] ?? '');
+    $description = $_POST['description'] ?? '';
+    $difficulty = $_POST['difficulty'] ?? 'intermediate';
+    $durationWeeks = (int)($_POST['duration_weeks'] ?? 4);
+    $sessionsPerWeek = (int)($_POST['sessions_per_week'] ?? 3);
+    $isPublic = (int)($_POST['is_public'] ?? 0);
+    $isActive = (int)($_POST['is_active'] ?? 1);
+    
+    if (!$programId || empty($name)) {
+        echo json_encode(['success' => false, 'error' => 'Недостатньо даних']);
+        exit;
+    }
+    
+    // Проверяем, что программа принадлежит тренеру
+    $stmt = $pdo->prepare("SELECT id FROM trainer_programs WHERE id = ? AND trainer_id = ?");
+    $stmt->execute([$programId, $userId]);
+    if (!$stmt->fetch()) {
+        echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
+        exit;
+    }
+    
+    // Обновляем программу
+    $stmt = $pdo->prepare("
+        UPDATE trainer_programs 
+        SET name = ?, description = ?, difficulty = ?, 
+            duration_weeks = ?, sessions_per_week = ?, 
+            is_public = ?, is_active = ?
+        WHERE id = ?
+    ");
+    $success = $stmt->execute([
+        $name, $description, $difficulty,
+        $durationWeeks, $sessionsPerWeek,
+        $isPublic, $isActive,
+        $programId
+    ]);
+    
+    if (!$success) {
+        echo json_encode(['success' => false, 'error' => 'Помилка оновлення програми']);
+        exit;
+    }
+    
+    // Удаляем старые упражнения
+    $stmt = $pdo->prepare("DELETE FROM program_exercises WHERE program_id = ?");
+    $stmt->execute([$programId]);
+    
+    // Добавляем новые упражнения
+    $exercises = json_decode($_POST['exercises'] ?? '[]', true);
+    foreach ($exercises as $ex) {
+        $stmt = $pdo->prepare("
+            INSERT INTO program_exercises (program_id, exercise_id, day, sets, reps, rest_seconds, notes, order_num)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([
+            $programId,
+            $ex['exercise_id'],
+            $ex['day'] ?? 1,
+            $ex['sets'] ?? 3,
+            $ex['reps'] ?? 10,
+            $ex['rest_seconds'] ?? 60,
+            $ex['notes'] ?? null,
+            $ex['order_num'] ?? 0
+        ]);
+    }
+    
+    echo json_encode(['success' => true]);
+    exit;
+}
 ?>

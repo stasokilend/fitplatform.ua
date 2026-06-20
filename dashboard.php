@@ -26,11 +26,20 @@ ob_start();
                     </div>
                     <h5 class="user-name"><?php echo htmlspecialchars($_SESSION['user_name']); ?></h5>
                     <span class="user-role badge bg-<?php echo $role === 'trainer' ? 'warning' : 'primary'; ?>">
-                        <?php echo $role === 'trainer' ? '🏋️ Тренер' : '💪 Користувач'; ?>
+                        <?php 
+                        if ($role === 'trainer') {
+                            echo '🏋️ Тренер';
+                        } elseif ($role === 'admin') {
+                            echo '👑 Адміністратор';
+                        } else {
+                            echo '💪 Користувач';
+                        }
+                        ?>
                     </span>
                 </div>
                 
                 <ul class="nav flex-column">
+                    <!-- Общие пункты для всех -->
                     <li class="nav-item">
                         <a class="nav-link <?php echo (!isset($_GET['page']) || $_GET['page'] === 'index') ? 'active' : ''; ?>" 
                            href="/dashboard.php">
@@ -38,11 +47,18 @@ ob_start();
                         </a>
                     </li>
                     
-                    <?php if ($role === 'user' || $role === 'admin'): ?>
+                    <!-- Для пользователей (не тренеров) -->
+                    <?php if ($role !== 'trainer'): ?>
                         <li class="nav-item">
                             <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'workouts' ? 'active' : ''; ?>" 
                                href="/dashboard.php?page=workouts">
                                 <i class="bi bi-calendar-check"></i> Тренування
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'workout-create' ? 'active' : ''; ?>" 
+                               href="/dashboard.php?page=workout-create">
+                                <i class="bi bi-plus-circle"></i> Створити
                             </a>
                         </li>
                         <li class="nav-item">
@@ -51,9 +67,28 @@ ob_start();
                                 <i class="bi bi-graph-up"></i> Статистика
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'health' ? 'active' : ''; ?>" 
+                               href="/dashboard.php?page=health">
+                                <i class="bi bi-heart-pulse"></i> Здоров'я
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'achievements' ? 'active' : ''; ?>" 
+                               href="/dashboard.php?page=achievements">
+                                <i class="bi bi-trophy"></i> Досягнення
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'google-fit' ? 'active' : ''; ?>" 
+                               href="/dashboard.php?page=google-fit">
+                                <i class="bi bi-google"></i> Google Fit
+                            </a>
+                        </li>
                     <?php endif; ?>
                     
-                    <?php if ($role === 'trainer' || $role === 'admin'): ?>
+                    <!-- Для тренеров -->
+                    <?php if ($role === 'trainer'): ?>
                         <li class="nav-item">
                             <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'clients' ? 'active' : ''; ?>" 
                                href="/dashboard.php?page=clients">
@@ -66,40 +101,40 @@ ob_start();
                                 <i class="bi bi-file-text"></i> Програми
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'messages' ? 'active' : ''; ?>" 
+                               href="/dashboard.php?page=messages">
+                                <i class="bi bi-chat"></i> Повідомлення
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'schedule' ? 'active' : ''; ?>" 
+                               href="/dashboard.php?page=schedule">
+                                <i class="bi bi-calendar"></i> Розклад
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'trainer-stats' ? 'active' : ''; ?>" 
+                               href="/dashboard.php?page=trainer-stats">
+                                <i class="bi bi-graph-up"></i> Статистика
+                            </a>
+                        </li>
                     <?php endif; ?>
                     
+                    <!-- Для администратора -->
+                    <?php if ($role === 'admin'): ?>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/index.php">
+                                <i class="bi bi-shield-lock"></i> Адмін-панель
+                            </a>
+                        </li>
+                    <?php endif; ?>
+                    
+                    <!-- Профиль (для всех) -->
                     <li class="nav-item">
                         <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'profile' ? 'active' : ''; ?>" 
                            href="/dashboard.php?page=profile">
                             <i class="bi bi-gear"></i> Налаштування
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'workout-create' ? 'active' : ''; ?>" 
-                        href="/dashboard.php?page=workout-create">
-                            <i class="bi bi-plus-circle"></i> Створити
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'health' ? 'active' : ''; ?>" 
-                        href="/dashboard.php?page=health">
-                            <i class="bi bi-heart-pulse"></i> Здоров'я
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'achievements' ? 'active' : ''; ?>" 
-                        href="/dashboard.php?page=achievements">
-                            <i class="bi bi-trophy"></i> Достигнення
-                        </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'google-fit' ? 'active' : ''; ?>" 
-                        href="/dashboard.php?page=google-fit">
-                            <i class="bi bi-google"></i> Google Fit
                         </a>
                     </li>
                     
@@ -115,7 +150,7 @@ ob_start();
         </nav>
         
         <!-- Контент -->
-        <main class="col-md-9 col-lg-10 ms-sm-auto px-md-4 py-4">
+        <main class="col-md-9 col-lg-10 ms-sm-auto px-md-4 py-4 main-content">
             <?php
             $page = $_GET['page'] ?? 'index';
             
@@ -129,9 +164,18 @@ ob_start();
             // Проверяем существование файла
             $file = $baseDir . $page . '.php';
             
+            // Если файл не найден в папке роли, пробуем в общей папке
+            if (!file_exists($file)) {
+                $file = 'views/dashboard/' . $page . '.php';
+            }
+            
             if ($page === 'index' || !file_exists($file)) {
                 // Главная дашборда
-                require_once 'views/dashboard/index.php';
+                if ($role === 'trainer') {
+                    require_once 'views/dashboard/trainer/index.php';
+                } else {
+                    require_once 'views/dashboard/index.php';
+                }
             } else {
                 require_once $file;
             }

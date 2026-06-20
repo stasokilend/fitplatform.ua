@@ -282,3 +282,95 @@ CREATE TABLE IF NOT EXISTS google_fit_sync_log (
 ALTER TABLE heart_rate_logs ADD COLUMN source VARCHAR(50) DEFAULT 'manual';
 ALTER TABLE heart_rate_logs ADD COLUMN hr_avg INT DEFAULT NULL;
 
+-- Добавляем поля для тренера в пользователей
+ALTER TABLE users ADD COLUMN specialty VARCHAR(255) NULL;
+ALTER TABLE users ADD COLUMN experience_years INT DEFAULT 0;
+ALTER TABLE users ADD COLUMN bio TEXT NULL;
+ALTER TABLE users ADD COLUMN avatar_url VARCHAR(255) NULL;
+ALTER TABLE users ADD COLUMN is_verified BOOLEAN DEFAULT FALSE;
+
+-- Таблица клиентов тренера (уже есть, добавляем поля)
+ALTER TABLE trainer_clients ADD COLUMN notes TEXT NULL;
+ALTER TABLE trainer_clients ADD COLUMN goals TEXT NULL;
+ALTER TABLE trainer_clients ADD COLUMN health_conditions TEXT NULL;
+ALTER TABLE trainer_clients ADD COLUMN last_visit DATETIME NULL;
+
+-- Таблица программ тренировок
+CREATE TABLE trainer_programs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    trainer_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    difficulty ENUM('beginner', 'intermediate', 'advanced') DEFAULT 'beginner',
+    duration_weeks INT DEFAULT 4,
+    sessions_per_week INT DEFAULT 3,
+    is_public BOOLEAN DEFAULT FALSE,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (trainer_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Таблица упражнений в программе
+CREATE TABLE program_exercises (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    program_id INT NOT NULL,
+    exercise_id INT NOT NULL,
+    day INT DEFAULT 1,
+    sets INT DEFAULT 3,
+    reps INT DEFAULT 10,
+    rest_seconds INT DEFAULT 60,
+    notes TEXT,
+    order_num INT DEFAULT 0,
+    FOREIGN KEY (program_id) REFERENCES trainer_programs(id) ON DELETE CASCADE,
+    FOREIGN KEY (exercise_id) REFERENCES exercises(id)
+);
+
+-- Таблица назначенных программ клиентам
+CREATE TABLE client_programs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    client_id INT NOT NULL,
+    program_id INT NOT NULL,
+    trainer_id INT NOT NULL,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    start_date DATE,
+    end_date DATE,
+    status ENUM('active', 'paused', 'completed', 'cancelled') DEFAULT 'active',
+    progress INT DEFAULT 0,
+    notes TEXT,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (program_id) REFERENCES trainer_programs(id) ON DELETE CASCADE,
+    FOREIGN KEY (trainer_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Таблица сообщений тренер-клиент
+CREATE TABLE trainer_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sender_id INT NOT NULL,
+    receiver_id INT NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (receiver_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Таблица расписания тренера
+CREATE TABLE trainer_schedule (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    trainer_id INT NOT NULL,
+    client_id INT NULL,
+    day_of_week ENUM('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'),
+    start_time TIME,
+    end_time TIME,
+    is_recurring BOOLEAN DEFAULT TRUE,
+    date DATE NULL,
+    status ENUM('available', 'booked', 'completed', 'cancelled') DEFAULT 'available',
+    notes TEXT,
+    FOREIGN KEY (trainer_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Вставляем тестовые данные для тренера (пароль: trainer123)
+INSERT INTO users (email, password_hash, full_name, role, specialty, experience_years, is_verified) 
+VALUES ('trainer@fitplatform.ua', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Олексій Тренер', 'trainer', 'Силові тренування, Функціональний фітнес', 5, 1);

@@ -81,4 +81,23 @@ function isProfileCompleted($userId) {
     
     return (bool)$result['profile_completed'];
 }
+
+// Проверка, является ли пользователь тренером
+function isTrainer() {
+    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'trainer';
+}
+
+/**
+ * Проверка, является ли пользователь администратором
+ */
+function isAdmin() {
+    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
+}
+
+/**
+ * Проверка, является ли пользователь обычным пользователем
+ */
+function isUser() {
+    return isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'user';
+}
 ?>

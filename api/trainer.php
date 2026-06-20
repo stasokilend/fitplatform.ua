@@ -1,0 +1,208 @@
+<?php
+require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../controllers/TrainerController.php';
+
+header('Content-Type: application/json');
+
+if (!isLoggedIn()) {
+    echo json_encode(['success' => false, 'error' => 'Необхідно авторизуватися']);
+    exit;
+}
+
+if ($_SESSION['user_role'] !== 'trainer' && $_SESSION['user_role'] !== 'admin') {
+    echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
+    exit;
+}
+
+$userId = $_SESSION['user_id'];
+$trainer = new TrainerController($userId);
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+
+// --- ПОЛУЧЕНИЕ СТАТИСТИКИ ---
+if ($action === 'stats') {
+    $stats = $trainer->getStats();
+    echo json_encode(['success' => true, 'data' => $stats]);
+    exit;
+}
+
+// --- ПОЛУЧЕНИЕ КЛИЕНТОВ ---
+if ($action === 'clients') {
+    $status = $_GET['status'] ?? 'active';
+    $clients = $trainer->getClients($status);
+    echo json_encode(['success' => true, 'data' => $clients]);
+    exit;
+}
+
+// --- ПОЛУЧЕНИЕ КЛИЕНТА ---
+if ($action === 'client') {
+    $clientId = (int)($_GET['id'] ?? 0);
+    if (!$clientId) {
+        echo json_encode(['success' => false, 'error' => 'ID клієнта не вказано']);
+        exit;
+    }
+    $client = $trainer->getClient($clientId);
+    $progress = $trainer->getClientProgress($clientId);
+    echo json_encode([
+        'success' => true, 
+        'data' => [
+            'client' => $client,
+            'progress' => $progress
+        ]
+    ]);
+    exit;
+}
+
+// --- ОТПРАВКА СООБЩЕНИЯ ---
+if ($action === 'send_message') {
+    $clientId = (int)($_POST['client_id'] ?? 0);
+    $message = trim($_POST['message'] ?? '');
+    
+    if (!$clientId || !$message) {
+        echo json_encode(['success' => false, 'error' => 'Недостатньо даних']);
+        exit;
+    }
+    
+    $success = $trainer->sendMessage($clientId, $message);
+    echo json_encode(['success' => $success]);
+    exit;
+}
+
+// --- ПОЛУЧЕНИЕ СООБЩЕНИЙ ---
+if ($action === 'messages') {
+    $clientId = (int)($_GET['client_id'] ?? 0);
+    if (!$clientId) {
+        echo json_encode(['success' => false, 'error' => 'ID клієнта не вказано']);
+        exit;
+    }
+    
+    $messages = $trainer->getMessages($clientId);
+    $trainer->markMessagesAsRead($clientId);
+    echo json_encode(['success' => true, 'data' => $messages]);
+    exit;
+}
+
+// --- ПОЛУЧЕНИЕ ПРОГРАММ ---
+if ($action === 'programs') {
+    $programs = $trainer->getPrograms();
+    echo json_encode(['success' => true, 'data' => $programs]);
+    exit;
+}
+
+// --- СОЗДАНИЕ ПРОГРАММЫ ---
+if ($action === 'create_program') {
+    $data = [
+        'name' => $_POST['name'] ?? '',
+        'description' => $_POST['description'] ?? '',
+        'difficulty' => $_POST['difficulty'] ?? 'beginner',
+        'duration_weeks' => (int)($_POST['duration_weeks'] ?? 4),
+        'sessions_per_week' => (int)($_POST['sessions_per_week'] ?? 3),
+        'is_public' => isset($_POST['is_public']) ? 1 : 0
+    ];
+    
+    if (empty($data['name'])) {
+        echo json_encode(['success' => false, 'error' => 'Введіть назву програми']);
+        exit;
+    }
+    
+    $programId = $trainer->createProgram($data);
+    if ($programId) {
+        echo json_encode(['success' => true, 'program_id' => $programId]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Помилка створення програми']);
+    }
+    exit;
+}
+
+// --- ДОБАВЛЕНИЕ УПРАЖНЕНИЯ В ПРОГРАММУ ---
+if ($action === 'add_exercise') {
+    $programId = (int)($_POST['program_id'] ?? 0);
+    $exerciseId = (int)($_POST['exercise_id'] ?? 0);
+    $data = [
+        'day' => (int)($_POST['day'] ?? 1),
+        'sets' => (int)($_POST['sets'] ?? 3),
+        'reps' => (int)($_POST['reps'] ?? 10),
+        'rest_seconds' => (int)($_POST['rest_seconds'] ?? 60),
+        'notes' => $_POST['notes'] ?? null,
+        'order_num' => (int)($_POST['order_num'] ?? 0)
+    ];
+    
+    if (!$programId || !$exerciseId) {
+        echo json_encode(['success' => false, 'error' => 'Недостатньо даних']);
+        exit;
+    }
+    
+    $success = $trainer->addExerciseToProgram($programId, $exerciseId, $data);
+    echo json_encode(['success' => $success]);
+    exit;
+}
+
+// --- НАЗНАЧЕНИЕ ПРОГРАММЫ КЛИЕНТУ ---
+if ($action === 'assign_program') {
+    $clientId = (int)($_POST['client_id'] ?? 0);
+    $programId = (int)($_POST['program_id'] ?? 0);
+    $startDate = $_POST['start_date'] ?? date('Y-m-d');
+    
+    if (!$clientId || !$programId) {
+        echo json_encode(['success' => false, 'error' => 'Недостатньо даних']);
+        exit;
+    }
+    
+    $success = $trainer->assignProgramToClient($clientId, $programId, $startDate);
+    echo json_encode(['success' => $success]);
+    exit;
+}
+
+// --- ДОБАВЛЕНИЕ КЛИЕНТА ---
+if ($action === 'add_client') {
+    $clientId = (int)($_POST['client_id'] ?? 0);
+    $notes = trim($_POST['notes'] ?? '');
+    
+    if (!$clientId) {
+        echo json_encode(['success' => false, 'error' => 'Виберіть клієнта']);
+        exit;
+    }
+    
+    // Проверяем, не добавлен ли уже
+    $stmt = $pdo->prepare("SELECT id FROM trainer_clients WHERE trainer_id = ? AND client_id = ?");
+    $stmt->execute([$userId, $clientId]);
+    if ($stmt->fetch()) {
+        echo json_encode(['success' => false, 'error' => 'Цей клієнт вже доданий']);
+        exit;
+    }
+    
+    $stmt = $pdo->prepare("
+        INSERT INTO trainer_clients (trainer_id, client_id, notes, status, assigned_at)
+        VALUES (?, ?, ?, 'active', NOW())
+    ");
+    $success = $stmt->execute([$userId, $clientId, $notes]);
+    
+    echo json_encode(['success' => $success]);
+    exit;
+}
+
+// --- УДАЛЕНИЕ ПРОГРАММЫ ---
+if ($action === 'delete_program') {
+    $programId = (int)($_POST['program_id'] ?? 0);
+    
+    if (!$programId) {
+        echo json_encode(['success' => false, 'error' => 'ID програми не вказано']);
+        exit;
+    }
+    
+    // Проверяем, что программа принадлежит тренеру
+    $stmt = $pdo->prepare("SELECT id FROM trainer_programs WHERE id = ? AND trainer_id = ?");
+    $stmt->execute([$programId, $userId]);
+    if (!$stmt->fetch()) {
+        echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
+        exit;
+    }
+    
+    $stmt = $pdo->prepare("DELETE FROM trainer_programs WHERE id = ? AND trainer_id = ?");
+    $success = $stmt->execute([$programId, $userId]);
+    
+    echo json_encode(['success' => $success]);
+    exit;
+}
+
+echo json_encode(['success' => false, 'error' => 'Невідома дія']);
+?>

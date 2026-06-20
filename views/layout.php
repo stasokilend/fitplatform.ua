@@ -151,18 +151,35 @@
                         <span>Головна</span>
                     </a>
                 </div>
-                <div class="col">
-                    <a href="/dashboard.php?page=workouts" class="mobile-nav-link <?php echo ($_GET['page'] ?? '') === 'workouts' ? 'active' : ''; ?>">
-                        <i class="bi bi-calendar-check"></i>
-                        <span>Тренування</span>
-                    </a>
-                </div>
-                <div class="col">
-                    <a href="/dashboard.php?page=workout-create" class="mobile-nav-link <?php echo ($_GET['page'] ?? '') === 'workout-create' ? 'active' : ''; ?>">
-                        <i class="bi bi-plus-circle"></i>
-                        <span>Створити</span>
-                    </a>
-                </div>
+                
+                <?php if ($_SESSION['user_role'] !== 'trainer'): ?>
+                    <div class="col">
+                        <a href="/dashboard.php?page=workouts" class="mobile-nav-link <?php echo ($_GET['page'] ?? '') === 'workouts' ? 'active' : ''; ?>">
+                            <i class="bi bi-calendar-check"></i>
+                            <span>Тренування</span>
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="/dashboard.php?page=workout-create" class="mobile-nav-link <?php echo ($_GET['page'] ?? '') === 'workout-create' ? 'active' : ''; ?>">
+                            <i class="bi bi-plus-circle"></i>
+                            <span>Створити</span>
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <div class="col">
+                        <a href="/dashboard.php?page=clients" class="mobile-nav-link <?php echo ($_GET['page'] ?? '') === 'clients' ? 'active' : ''; ?>">
+                            <i class="bi bi-people"></i>
+                            <span>Клієнти</span>
+                        </a>
+                    </div>
+                    <div class="col">
+                        <a href="/dashboard.php?page=programs" class="mobile-nav-link <?php echo ($_GET['page'] ?? '') === 'programs' ? 'active' : ''; ?>">
+                            <i class="bi bi-file-text"></i>
+                            <span>Програми</span>
+                        </a>
+                    </div>
+                <?php endif; ?>
+                
                 <div class="col">
                     <a href="/dashboard.php?page=health" class="mobile-nav-link <?php echo ($_GET['page'] ?? '') === 'health' ? 'active' : ''; ?>">
                         <i class="bi bi-heart-pulse"></i>

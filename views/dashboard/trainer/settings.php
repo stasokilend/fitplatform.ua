@@ -29,6 +29,22 @@ $stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
 $stmt->execute([$userId]);
 $trainerData = $stmt->fetch();
 
+// Получаем настройки уведомлений
+$stmt = $pdo->prepare("SELECT * FROM trainer_notification_settings WHERE trainer_id = ?");
+$stmt->execute([$userId]);
+$notificationSettings = $stmt->fetch();
+
+if (!$notificationSettings) {
+    $notificationSettings = [
+        'email_notifications' => 1,
+        'workout_reminders' => 1,
+        'achievement_notifications' => 1,
+        'message_notifications' => 1,
+        'client_activity' => 1,
+        'new_clients' => 1
+    ];
+}
+
 // Обработка обновления профиля тренера
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -118,6 +134,12 @@ $hasClients = $clientsCount > 0;
             <a class="nav-link <?php echo $activeTab === 'integrations' ? 'active' : ''; ?>" 
                href="?page=settings&tab=integrations" role="tab">
                 <i class="bi bi-plug"></i> Інтеграції
+            </a>
+        </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link <?php echo $activeTab === 'notifications' ? 'active' : ''; ?>" 
+               href="?page=settings&tab=notifications" role="tab">
+                <i class="bi bi-bell"></i> Сповіщення
             </a>
         </li>
         <li class="nav-item" role="presentation">
@@ -236,7 +258,7 @@ $hasClients = $clientsCount > 0;
     <div class="tab-pane fade show active">
         <div class="card border-0 shadow-sm">
             <div class="card-body">
-                <h5 class="mb-3"><i class="bi bi-plug text-primary"></i> Google Fit</h5>
+                <h5 class="mb-3"><i class="bi bi-google text-primary"></i> Google Fit</h5>
                 <p class="text-muted">Синхронізуйте свої дані про активність, пульс та інші показники з Google Fit</p>
                 
                 <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3">
@@ -264,6 +286,90 @@ $hasClients = $clientsCount > 0;
                         </button>
                     </div>
                 <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- Вкладка: Сповіщення -->
+    <?php if ($activeTab === 'notifications'): ?>
+    <div class="tab-pane fade show active">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="mb-3"><i class="bi bi-bell text-primary"></i> Налаштування сповіщень</h5>
+                <p class="text-muted">Оберіть, які сповіщення ви хочете отримувати</p>
+                
+                <form id="notificationSettingsForm">
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                            <h6 class="mb-0">Email сповіщення</h6>
+                            <small class="text-muted">Отримувати сповіщення на пошту</small>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="emailNotifications" 
+                                   <?php echo $notificationSettings['email_notifications'] ? 'checked' : ''; ?>>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                            <h6 class="mb-0">Нагадування про тренування</h6>
+                            <small class="text-muted">Отримувати нагадування за 1 годину до тренування</small>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="workoutReminders" 
+                                   <?php echo $notificationSettings['workout_reminders'] ? 'checked' : ''; ?>>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                            <h6 class="mb-0">Досягнення</h6>
+                            <small class="text-muted">Отримувати сповіщення про нові досягнення</small>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="achievementNotifications" 
+                                   <?php echo $notificationSettings['achievement_notifications'] ? 'checked' : ''; ?>>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                            <h6 class="mb-0">Нові повідомлення</h6>
+                            <small class="text-muted">Отримувати сповіщення про нові повідомлення від клієнтів</small>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="messageNotifications" 
+                                   <?php echo $notificationSettings['message_notifications'] ? 'checked' : ''; ?>>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                        <div>
+                            <h6 class="mb-0">Активність клієнтів</h6>
+                            <small class="text-muted">Отримувати сповіщення про активність клієнтів</small>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="clientActivity" 
+                                   <?php echo $notificationSettings['client_activity'] ? 'checked' : ''; ?>>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center py-2">
+                        <div>
+                            <h6 class="mb-0">Нові клієнти</h6>
+                            <small class="text-muted">Отримувати сповіщення про нових клієнтів</small>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="newClients" 
+                                   <?php echo $notificationSettings['new_clients'] ? 'checked' : ''; ?>>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-gradient mt-3" id="saveNotificationBtn">
+                        <i class="bi bi-save"></i> Зберегти налаштування
+                    </button>
+                </form>
             </div>
         </div>
     </div>
@@ -358,6 +464,48 @@ document.addEventListener('DOMContentLoaded', function() {
             strengthBar.className = 'progress-bar ' + className;
             strengthText.textContent = 'Надійність: ' + label;
             strengthText.className = strength <= 2 ? 'text-danger' : (strength <= 3 ? 'text-warning' : 'text-success');
+        });
+    }
+    
+    // --- НАСТРОЙКИ УВЕДОМЛЕНИЙ ---
+    const notificationForm = document.getElementById('notificationSettingsForm');
+    if (notificationForm) {
+        notificationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('action', 'update_notifications');
+            formData.append('email_notifications', document.getElementById('emailNotifications').checked ? 1 : 0);
+            formData.append('workout_reminders', document.getElementById('workoutReminders').checked ? 1 : 0);
+            formData.append('achievement_notifications', document.getElementById('achievementNotifications').checked ? 1 : 0);
+            formData.append('message_notifications', document.getElementById('messageNotifications').checked ? 1 : 0);
+            formData.append('client_activity', document.getElementById('clientActivity').checked ? 1 : 0);
+            formData.append('new_clients', document.getElementById('newClients').checked ? 1 : 0);
+            
+            const btn = document.getElementById('saveNotificationBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Збереження...';
+            
+            fetch('/api/trainer.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-save"></i> Зберегти налаштування';
+                
+                if (data.success) {
+                    showToast('Налаштування збережено!', 'success');
+                } else {
+                    showToast(data.error || 'Помилка збереження', 'danger');
+                }
+            })
+            .catch(function() {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-save"></i> Зберегти налаштування';
+                showToast('Помилка з\'єднання', 'danger');
+            });
         });
     }
     
@@ -472,9 +620,15 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     showToast('Роль змінено на користувача! Сторінка оновиться...', 'success');
-                    setTimeout(function() {
-                        window.location.href = '/dashboard.php?page=settings&tab=role';
-                    }, 1500);
+                    if (data.redirect) {
+                        setTimeout(function() {
+                            window.location.href = data.redirect;
+                        }, 1000);
+                    } else {
+                        setTimeout(function() {
+                            window.location.href = '/dashboard.php?page=settings&tab=role';
+                        }, 1000);
+                    }
                 } else {
                     showToast(data.error || 'Помилка зміни ролі', 'danger');
                     btn.disabled = false;

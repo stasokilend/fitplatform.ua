@@ -414,3 +414,16 @@ INSERT INTO notification_templates (code, title, message, icon, type) VALUES
 ('program_assigned', '📋 Нова програма', 'Вам призначено програму "{program_name}"', 'bi-file-text', 'info'),
 ('weight_milestone', '⚖️ Прогрес у вазі', 'Ви досягли цільової ваги!', 'bi-weight-scale', 'success'),
 ('reminder', '⏰ Нагадування', 'Не забудьте про тренування сьогодні!', 'bi-clock', 'warning');
+
+-- Таблица настроек уведомлений тренера
+CREATE TABLE IF NOT EXISTS trainer_notification_settings (
+    trainer_id INT PRIMARY KEY,
+    email_notifications BOOLEAN DEFAULT TRUE,
+    workout_reminders BOOLEAN DEFAULT TRUE,
+    achievement_notifications BOOLEAN DEFAULT TRUE,
+    message_notifications BOOLEAN DEFAULT TRUE,
+    client_activity BOOLEAN DEFAULT TRUE,
+    new_clients BOOLEAN DEFAULT TRUE,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (trainer_id) REFERENCES users(id) ON DELETE CASCADE
+);

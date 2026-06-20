@@ -9,11 +9,6 @@ if (!isLoggedIn()) {
     exit;
 }
 
-if ($_SESSION['user_role'] !== 'trainer' && $_SESSION['user_role'] !== 'admin') {
-    echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
-    exit;
-}
-
 $userId = $_SESSION['user_id'];
 $trainer = new TrainerController($userId);
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
@@ -106,6 +101,17 @@ if ($action === 'create_program') {
     
     $programId = $trainer->createProgram($data);
     if ($programId) {
+        // Добавляем упражнения если есть
+        $exercises = json_decode($_POST['exercises'] ?? '[]', true);
+        foreach ($exercises as $ex) {
+            $trainer->addExerciseToProgram($programId, $ex['id'], [
+                'day' => 1,
+                'sets' => 3,
+                'reps' => 10,
+                'rest_seconds' => 60,
+                'order_num' => 0
+            ]);
+        }
         echo json_encode(['success' => true, 'program_id' => $programId]);
     } else {
         echo json_encode(['success' => false, 'error' => 'Помилка створення програми']);
@@ -163,6 +169,7 @@ if ($action === 'add_client') {
     }
     
     // Проверяем, не добавлен ли уже
+    global $pdo;
     $stmt = $pdo->prepare("SELECT id FROM trainer_clients WHERE trainer_id = ? AND client_id = ?");
     $stmt->execute([$userId, $clientId]);
     if ($stmt->fetch()) {
@@ -189,7 +196,7 @@ if ($action === 'delete_program') {
         exit;
     }
     
-    // Проверяем, что программа принадлежит тренеру
+    global $pdo;
     $stmt = $pdo->prepare("SELECT id FROM trainer_programs WHERE id = ? AND trainer_id = ?");
     $stmt->execute([$programId, $userId]);
     if (!$stmt->fetch()) {
@@ -204,8 +211,6 @@ if ($action === 'delete_program') {
     exit;
 }
 
-echo json_encode(['success' => false, 'error' => 'Невідома дія']);
-
 // --- ПЕРЕКЛЮЧЕНИЕ НА ПОЛЬЗОВАТЕЛЯ ---
 if ($action === 'switch_to_user') {
     // Проверяем, что пользователь - тренер
@@ -216,19 +221,21 @@ if ($action === 'switch_to_user') {
     
     $result = $trainer->switchToUser();
     
-    // Если успешно, обновляем сессию
+    // Если успешно, обновляем сессию и возвращаем успех
     if ($result['success']) {
         $_SESSION['user_role'] = 'user';
         // Обновляем имя пользователя в сессии
+        global $pdo;
         $stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $user = $stmt->fetch();
         if ($user) {
             $_SESSION['user_name'] = $user['full_name'];
         }
+        echo json_encode(['success' => true, 'redirect' => '/dashboard.php?page=settings&tab=role']);
+    } else {
+        echo json_encode($result);
     }
-    
-    echo json_encode($result);
     exit;
 }
 
@@ -245,16 +252,17 @@ if ($action === 'switch_to_trainer') {
     // Если успешно, обновляем сессию
     if ($result['success']) {
         $_SESSION['user_role'] = 'trainer';
-        // Обновляем имя пользователя в сессии
+        global $pdo;
         $stmt = $pdo->prepare("SELECT full_name FROM users WHERE id = ?");
         $stmt->execute([$userId]);
         $user = $stmt->fetch();
         if ($user) {
             $_SESSION['user_name'] = $user['full_name'];
         }
+        echo json_encode(['success' => true, 'redirect' => '/dashboard.php?page=settings&tab=role']);
+    } else {
+        echo json_encode($result);
     }
-    
-    echo json_encode($result);
     exit;
 }
 
@@ -283,6 +291,65 @@ if ($action === 'transfer_clients') {
 if ($action === 'clients_count') {
     $count = $trainer->getActiveClientsCount();
     echo json_encode(['success' => true, 'count' => $count]);
+    exit;
+}
+
+// --- ОБНОВЛЕНИЕ НАСТРОЕК УВЕДОМЛЕНИЙ ТРЕНЕРА ---
+if ($action === 'update_notifications') {
+    $emailNotifications = isset($_POST['email_notifications']) ? 1 : 0;
+    $workoutReminders = isset($_POST['workout_reminders']) ? 1 : 0;
+    $achievementNotifications = isset($_POST['achievement_notifications']) ? 1 : 0;
+    $messageNotifications = isset($_POST['message_notifications']) ? 1 : 0;
+    $clientActivity = isset($_POST['client_activity']) ? 1 : 0;
+    $newClients = isset($_POST['new_clients']) ? 1 : 0;
+    
+    global $pdo;
+    $stmt = $pdo->prepare("
+        INSERT INTO trainer_notification_settings 
+        (trainer_id, email_notifications, workout_reminders, achievement_notifications, 
+         message_notifications, client_activity, new_clients)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE 
+            email_notifications = ?,
+            workout_reminders = ?,
+            achievement_notifications = ?,
+            message_notifications = ?,
+            client_activity = ?,
+            new_clients = ?
+    ");
+    
+    $success = $stmt->execute([
+        $userId, $emailNotifications, $workoutReminders, $achievementNotifications,
+        $messageNotifications, $clientActivity, $newClients,
+        $emailNotifications, $workoutReminders, $achievementNotifications,
+        $messageNotifications, $clientActivity, $newClients
+    ]);
+    
+    echo json_encode(['success' => $success]);
+    exit;
+}
+
+// --- ПОЛУЧЕНИЕ НАСТРОЕК УВЕДОМЛЕНИЙ ---
+if ($action === 'get_notifications') {
+    global $pdo;
+    $stmt = $pdo->prepare("
+        SELECT * FROM trainer_notification_settings WHERE trainer_id = ?
+    ");
+    $stmt->execute([$userId]);
+    $settings = $stmt->fetch();
+    
+    if (!$settings) {
+        $settings = [
+            'email_notifications' => 1,
+            'workout_reminders' => 1,
+            'achievement_notifications' => 1,
+            'message_notifications' => 1,
+            'client_activity' => 1,
+            'new_clients' => 1
+        ];
+    }
+    
+    echo json_encode(['success' => true, 'data' => $settings]);
     exit;
 }
 

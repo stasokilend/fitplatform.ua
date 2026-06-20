@@ -6,14 +6,12 @@ require_once 'config/database.php';
 require_once 'controllers/ProfileController.php';
 require_once 'includes/functions.php';
 
-
 // Проверяем актуальность роли в сессии
 $stmt = $pdo->prepare("SELECT role, full_name FROM users WHERE id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $user = $stmt->fetch();
 
 if ($user) {
-    // Если роль изменилась в БД, обновляем сессию
     if ($_SESSION['user_role'] !== $user['role']) {
         $_SESSION['user_role'] = $user['role'];
         $_SESSION['user_name'] = $user['full_name'];

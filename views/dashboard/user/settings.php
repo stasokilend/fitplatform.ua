@@ -285,7 +285,7 @@ $genders = [
     <div class="tab-pane fade show active">
         <div class="card border-0 shadow-sm">
             <div class="card-body">
-                <h5 class="mb-3"><i class="bi bi-plug text-primary"></i> Google Fit</h5>
+                <h5 class="mb-3"><i class="bi bi-google text-primary"></i> Google Fit</h5>
                 <p class="text-muted">Синхронізуйте свої дані про активність, пульс та інші показники з Google Fit</p>
                 
                 <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3 mb-3">

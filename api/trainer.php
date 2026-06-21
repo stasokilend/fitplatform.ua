@@ -527,4 +527,74 @@ if ($action === 'handle_program_request') {
     exit;
 }
 }
+
+// --- ДОБАВЛЕНИЕ ЗАНЯТИЯ В РАСПИСАНИЕ ---
+if ($action === 'add_schedule') {
+    $clientId = (int)($_POST['client_id'] ?? 0);
+    $dayOfWeek = $_POST['day_of_week'] ?? '';
+    $startTime = $_POST['start_time'] ?? '';
+    $endTime = $_POST['end_time'] ?? '';
+    $status = $_POST['status'] ?? 'booked';
+    $date = $_POST['date'] ?? null;
+    $notes = trim($_POST['notes'] ?? '');
+    
+    if (!$clientId || !$dayOfWeek || !$startTime || !$endTime) {
+        echo json_encode(['success' => false, 'error' => 'Заповніть всі обов\'язкові поля']);
+        exit;
+    }
+    
+    // Проверяем, что клиент принадлежит тренеру
+    $stmt = $pdo->prepare("SELECT id FROM trainer_clients WHERE trainer_id = ? AND client_id = ? AND status = 'active'");
+    $stmt->execute([$userId, $clientId]);
+    if (!$stmt->fetch()) {
+        echo json_encode(['success' => false, 'error' => 'Клієнт не знайдений або неактивний']);
+        exit;
+    }
+    
+    $data = [
+        'client_id' => $clientId,
+        'day_of_week' => $dayOfWeek,
+        'start_time' => $startTime,
+        'end_time' => $endTime,
+        'date' => $date,
+        'notes' => $notes
+    ];
+    
+    $success = $trainer->addSchedule($data);
+    
+    if ($success) {
+        // Обновляем статус в расписании
+        $stmt = $pdo->prepare("
+            UPDATE trainer_schedule 
+            SET status = ? 
+            WHERE trainer_id = ? AND client_id = ? 
+              AND day_of_week = ? AND start_time = ? AND date = ?
+        ");
+        $stmt->execute([$status, $userId, $clientId, $dayOfWeek, $startTime, $date]);
+        
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Помилка додавання заняття']);
+    }
+    exit;
+}
+
+// --- УДАЛЕНИЕ ЗАНЯТИЯ ИЗ РАСПИСАНИЯ ---
+if ($action === 'delete_schedule') {
+    $scheduleId = (int)($_POST['schedule_id'] ?? 0);
+    
+    if (!$scheduleId) {
+        echo json_encode(['success' => false, 'error' => 'ID заняття не вказано']);
+        exit;
+    }
+    
+    $stmt = $pdo->prepare("
+        DELETE FROM trainer_schedule 
+        WHERE id = ? AND trainer_id = ?
+    ");
+    $success = $stmt->execute([$scheduleId, $userId]);
+    
+    echo json_encode(['success' => $success]);
+    exit;
+}
 ?>

@@ -9,7 +9,7 @@ require_once 'controllers/GamificationController.php';
 $gamification = new GamificationController($userId);
 $stats = $gamification->getGamificationStats();
 $recentAchievements = $gamification->getRecentAchievements(3);
-$summary = $gamification->getAchievementSummary(); // <-- ВАЖНО!
+$summary = $gamification->getAchievementSummary();
 ?>
 
 <div class="fade-in-up">
@@ -131,21 +131,21 @@ $summary = $gamification->getAchievementSummary(); // <-- ВАЖНО!
                     <h5 class="mb-0"><i class="bi bi-clock-history text-primary"></i> Остання активність</h5>
                 </div>
                 <div class="card-body">
-                    <?php if ($stats['last_workout']): ?>
+                    <?php if (isset($stats['last_workout']) && $stats['last_workout']): ?>
                         <div class="d-flex align-items-center mb-3">
                             <div class="me-3">
                                 <i class="bi bi-dumbbell display-6 text-primary"></i>
                             </div>
                             <div>
-                                <p class="fw-semibold mb-0"><?php echo htmlspecialchars($stats['last_workout']['name']); ?></p>
+                                <p class="fw-semibold mb-0"><?php echo htmlspecialchars($stats['last_workout']['name'] ?? 'Тренування'); ?></p>
                                 <small class="text-muted">
-                                    <i class="bi bi-calendar"></i> <?php echo date('d.m.Y', strtotime($stats['last_workout']['created_at'])); ?>
+                                    <i class="bi bi-calendar"></i> <?php echo date('d.m.Y', strtotime($stats['last_workout']['created_at'] ?? 'now')); ?>
                                     <span class="mx-2">•</span>
-                                    <i class="bi bi-clock"></i> <?php echo $stats['last_workout']['total_duration_min']; ?> хв
+                                    <i class="bi bi-clock"></i> <?php echo $stats['last_workout']['total_duration_min'] ?? 0; ?> хв
                                 </small>
                             </div>
-                            <span class="badge bg-<?php echo $stats['last_workout']['status'] === 'completed' ? 'success' : 'warning'; ?> ms-auto">
-                                <?php echo $stats['last_workout']['status'] === 'completed' ? '✅ Завершено' : '⏳ В процесі'; ?>
+                            <span class="badge bg-<?php echo ($stats['last_workout']['status'] ?? '') === 'completed' ? 'success' : 'warning'; ?> ms-auto">
+                                <?php echo ($stats['last_workout']['status'] ?? '') === 'completed' ? '✅ Завершено' : '⏳ В процесі'; ?>
                             </span>
                         </div>
                         <a href="/dashboard.php?page=workouts" class="btn btn-sm btn-outline-primary">
@@ -208,7 +208,7 @@ $summary = $gamification->getAchievementSummary(); // <-- ВАЖНО!
                     </div>
                     
                     <!-- Последние достижения -->
-                    <?php if (count($recentAchievements) > 0): ?>
+                    <?php if (isset($recentAchievements) && count($recentAchievements) > 0): ?>
                         <div class="border-top pt-2">
                             <small class="text-muted d-block mb-2">Останні досягнення:</small>
                             <?php foreach ($recentAchievements as $ach): ?>

@@ -1,12 +1,13 @@
 <?php 
 require_once 'includes/session.php';
+require_once 'includes/Csrf.php';
 
 if (isLoggedIn()) {
     require_once 'includes/auth.php';
     if (isProfileCompleted($_SESSION['user_id'])) {
-        header('Location: /dashboard.php');
+        header('Location: ' . url('/dashboard.php'));
     } else {
-        header('Location: /profile-setup.php');
+        header('Location: ' . url('/profile-setup.php'));
     }
     exit;
 }
@@ -28,8 +29,9 @@ ob_start();
                     <p class="text-muted">Увійдіть у свій акаунт</p>
                 </div>
                 
-                <form id="loginForm" action="/controllers/AuthController.php" method="POST">
+                <form id="loginForm" action="<?= url('/controllers/AuthController.php'); ?>" method="POST">
                     <input type="hidden" name="action" value="login">
+                    <?= csrfField(); ?>
                     
                     <div class="mb-3">
                         <label for="loginEmail" class="form-label fw-semibold">Email</label>
@@ -64,7 +66,7 @@ ob_start();
                 <div class="text-center mt-4">
                     <p class="text-muted small">
                         Ще не зареєстровані? 
-                        <a href="/register.php" class="text-decoration-none fw-semibold" style="color: var(--primary);">
+                        <a href="<?= url('/register.php'); ?>" class="text-decoration-none fw-semibold" style="color: var(--primary);">
                             Створити акаунт <i class="bi bi-arrow-right"></i>
                         </a>
                     </p>

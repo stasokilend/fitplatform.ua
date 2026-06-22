@@ -1,8 +1,9 @@
 <?php 
 require_once 'includes/session.php';
+require_once 'includes/Csrf.php';
 
 if (isLoggedIn()) {
-    header('Location: /dashboard.php');
+    header('Location: ' . url('/dashboard.php'));
     exit;
 }
 
@@ -22,8 +23,9 @@ ob_start();
                     <p class="text-muted">Створіть акаунт і почніть тренуватися</p>
                 </div>
                 
-                <form id="registerForm" action="/controllers/AuthController.php" method="POST">
+                <form id="registerForm" action="<?= url('/controllers/AuthController.php'); ?>" method="POST">
                     <input type="hidden" name="action" value="register">
+                    <?= csrfField(); ?>
                     
                     <div class="mb-3">
                         <label for="fullName" class="form-label fw-semibold">Повне ім'я</label>
@@ -86,7 +88,7 @@ ob_start();
                 <div class="text-center mt-4">
                     <p class="text-muted small">
                         Вже маєте акаунт? 
-                        <a href="/login.php" class="text-decoration-none fw-semibold" style="color: var(--primary);">
+                        <a href="<?= url('/login.php'); ?>" class="text-decoration-none fw-semibold" style="color: var(--primary);">
                             Увійти <i class="bi bi-arrow-right"></i>
                         </a>
                     </p>

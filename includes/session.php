@@ -1,33 +1,50 @@
 <?php
-// Запуск сессии всегда в начале
+require_once __DIR__ . '/../config/Env.php';
+require_once __DIR__ . '/functions.php';
+Env::load();
+
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', '1');
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.gc_maxlifetime', (string) (Env::int('SESSION_LIFETIME', 120) * 60));
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (($_SERVER['SERVER_PORT'] ?? null) == 443);
+    if ($isHttps) {
+        ini_set('session.cookie_secure', '1');
+    }
     session_start();
 }
 
 function isLoggedIn() {
-    // Проверяем, что сессия существует и содержит user_id
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
     return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
-function getUserRole() {
+
+function getActualUserRole() {
     return $_SESSION['user_role'] ?? null;
 }
 
-function getUserId() {
-    return $_SESSION['user_id'] ?? null;
+function getEffectiveUserRole() {
+    if (($_SESSION['user_role'] ?? null) === 'admin') {
+        return $_SESSION['admin_test_role'] ?? 'user';
+    }
+    return $_SESSION['user_role'] ?? null;
 }
 
-function getUserName() {
-    return $_SESSION['user_name'] ?? 'Користувач';
+function isAdminRole() {
+    return ($_SESSION['user_role'] ?? null) === 'admin';
 }
+
+function getUserRole() { return getEffectiveUserRole(); }
+function getUserId() { return $_SESSION['user_id'] ?? null; }
+function getUserName() { return $_SESSION['user_name'] ?? 'Користувач'; }
 
 function requireLogin() {
     if (!isLoggedIn()) {
         $_SESSION['error'] = 'Будь ласка, увійдіть в систему';
-        header('Location: /login.php');
+        header('Location: ' . url('/login.php'));
         exit;
     }
 }
@@ -35,12 +52,11 @@ function requireLogin() {
 function requireRole($role) {
     requireLogin();
     if ($_SESSION['user_role'] !== $role && $_SESSION['user_role'] !== 'admin') {
-        header('Location: /dashboard.php');
+        header('Location: ' . url('/dashboard.php'));
         exit;
     }
 }
 
-// Функция для отладки сессии
 function debugSession() {
     echo '<pre>';
     echo 'SESSION STATUS: ' . session_status() . "\n";

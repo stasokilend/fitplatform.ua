@@ -101,6 +101,10 @@
     </nav>
 
     <!-- Mobile Drawer (меню) -->
+    <?php
+    $layoutActualRole = $_SESSION['user_role'] ?? null;
+    $layoutRole = $layoutActualRole === 'admin' ? ($_SESSION['admin_test_role'] ?? 'user') : $layoutActualRole;
+    ?>
     <?php if (isset($_SESSION['user_id'])): ?>
     <div class="mobile-drawer-overlay" id="drawerOverlay"></div>
     <div class="mobile-drawer" id="mobileDrawer">
@@ -111,10 +115,11 @@
             <div class="name"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Користувач'); ?></div>
             <div class="role">
                 <?php 
-                if ($_SESSION['user_role'] === 'trainer') {
-                    echo '🏋️ Тренер';
-                } elseif ($_SESSION['user_role'] === 'admin') {
+                if ($layoutActualRole === 'admin') {
                     echo '👑 Адміністратор';
+                    echo $layoutRole === 'trainer' ? ' · тест: тренер' : ' · тест: користувач';
+                } elseif ($layoutRole === 'trainer') {
+                    echo '🏋️ Тренер';
                 } else {
                     echo '💪 Користувач';
                 }
@@ -127,7 +132,7 @@
                 <i class="bi bi-speedometer2"></i> Кабінет
             </a>
             
-            <?php if ($_SESSION['user_role'] !== 'trainer'): ?>
+            <?php if ($layoutRole !== 'trainer'): ?>
                 <a href="/dashboard.php?page=workouts" class="nav-link <?php echo ($_GET['page'] ?? '') === 'workouts' ? 'active' : ''; ?>">
                     <i class="bi bi-calendar-check"></i> Тренування
                 </a>
@@ -166,7 +171,7 @@
                 <i class="bi bi-gear"></i> Налаштування
             </a>
             
-            <?php if ($_SESSION['user_role'] === 'admin'): ?>
+            <?php if ($layoutActualRole === 'admin'): ?>
                 <a href="/admin/index.php" class="nav-link">
                     <i class="bi bi-shield-lock"></i> Адмін-панель
                 </a>
@@ -223,7 +228,7 @@
                     </a>
                 </div>
                 
-                <?php if ($_SESSION['user_role'] !== 'trainer'): ?>
+                <?php if ($layoutRole !== 'trainer'): ?>
                     <div class="col">
                         <a href="/dashboard.php?page=workouts" class="mobile-nav-link <?php echo ($_GET['page'] ?? '') === 'workouts' ? 'active' : ''; ?>">
                             <i class="bi bi-calendar-check"></i>

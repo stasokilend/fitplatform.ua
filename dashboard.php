@@ -6,7 +6,8 @@ require_once 'config/database.php';
 require_once 'controllers/ProfileController.php';
 require_once 'includes/functions.php';
 
-// Проверяем актуальность роли в сессии
+// Проверяем актуальность основной роли в сессии.
+// Для админа тестовая роль хранится отдельно и не меняет users.role.
 $stmt = $pdo->prepare("SELECT role, full_name FROM users WHERE id = ?");
 $stmt->execute([$_SESSION['user_id']]);
 $user = $stmt->fetch();
@@ -21,7 +22,8 @@ if ($user) {
 $userId = $_SESSION['user_id'];
 $profile = getUserProfile($userId);
 $stats = getDashboardStats($userId);
-$role = $_SESSION['user_role'];
+$actualRole = $_SESSION['user_role'];
+$role = $actualRole === 'admin' ? ($_SESSION['admin_test_role'] ?? 'user') : $actualRole;
 
 $pageTitle = 'Кабінет';
 ob_start();
@@ -37,12 +39,13 @@ ob_start();
                         <i class="bi bi-person-fill"></i>
                     </div>
                     <h5 class="user-name"><?php echo htmlspecialchars($_SESSION['user_name']); ?></h5>
-                    <span class="user-role badge bg-<?php echo $role === 'trainer' ? 'warning' : 'primary'; ?>">
+                    <span class="user-role badge bg-<?php echo $actualRole === 'admin' ? 'danger' : ($role === 'trainer' ? 'warning' : 'primary'); ?>">
                         <?php 
-                        if ($role === 'trainer') {
-                            echo '🏋️ Тренер';
-                        } elseif ($role === 'admin') {
+                        if ($actualRole === 'admin') {
                             echo '👑 Адміністратор';
+                            echo $role === 'trainer' ? ' · тест: тренер' : ' · тест: користувач';
+                        } elseif ($role === 'trainer') {
+                            echo '🏋️ Тренер';
                         } else {
                             echo '💪 Користувач';
                         }
@@ -90,7 +93,7 @@ ob_start();
                             <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'chat' ? 'active' : ''; ?>" 
                             href="/dashboard.php?page=chat">
                                 <i class="bi bi-chat-dots"></i> Чат
-                                <?php if ($_SESSION['user_role'] !== 'trainer'): ?>
+                                <?php if ($role !== 'trainer'): ?>
                                 <span class="badge bg-danger rounded-pill ms-1" id="chatBadge" style="display: none;">0</span>
                                 <?php endif; ?>
                             </a>
@@ -145,7 +148,7 @@ ob_start();
                     <?php endif; ?>
                     
                     <!-- Для администратора -->
-                    <?php if ($role === 'admin'): ?>
+                    <?php if ($actualRole === 'admin'): ?>
                         <li class="nav-item">
                             <a class="nav-link" href="/admin/index.php">
                                 <i class="bi bi-shield-lock"></i> Адмін-панель

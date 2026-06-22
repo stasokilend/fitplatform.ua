@@ -16,13 +16,21 @@ if ($_SESSION['user_role'] !== 'trainer' && $_SESSION['user_role'] !== 'admin') 
 }
 
 $userId = $_SESSION['user_id'];
+$isAdmin = ($_SESSION['user_role'] ?? null) === 'admin';
+$effectiveRole = $isAdmin ? ($_SESSION['admin_test_role'] ?? 'user') : ($_SESSION['user_role'] ?? null);
 $trainer = new TrainerController($userId);
 $action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 // --- ПЕРЕКЛЮЧЕНИЕ НА ПОЛЬЗОВАТЕЛЯ ---
 if ($action === 'switch_to_user') {
+    if ($isAdmin) {
+        $_SESSION['admin_test_role'] = 'user';
+        echo json_encode(['success' => true, 'redirect' => '/dashboard.php?page=settings&tab=role']);
+        exit;
+    }
+
     // Проверяем, что пользователь - тренер
-    if ($_SESSION['user_role'] !== 'trainer') {
+    if ($effectiveRole !== 'trainer') {
         echo json_encode(['success' => false, 'error' => 'Ви вже є звичайним користувачем']);
         exit;
     }
@@ -47,8 +55,14 @@ if ($action === 'switch_to_user') {
 
 // --- ПЕРЕКЛЮЧЕНИЕ НА ТРЕНЕРА ---
 if ($action === 'switch_to_trainer') {
+    if ($isAdmin) {
+        $_SESSION['admin_test_role'] = 'trainer';
+        echo json_encode(['success' => true, 'redirect' => '/dashboard.php?page=settings&tab=role']);
+        exit;
+    }
+
     // Проверяем, что пользователь не тренер
-    if ($_SESSION['user_role'] === 'trainer') {
+    if ($effectiveRole === 'trainer') {
         echo json_encode(['success' => false, 'error' => 'Ви вже є тренером']);
         exit;
     }
@@ -72,7 +86,7 @@ if ($action === 'switch_to_trainer') {
 }
 
 // --- ОСТАЛЬНЫЕ ЭНДПОИНТЫ (требуют роль тренера) ---
-if ($_SESSION['user_role'] !== 'trainer' && $_SESSION['user_role'] !== 'admin') {
+if ($effectiveRole !== 'trainer' && !$isAdmin) {
     echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
     exit;
 }

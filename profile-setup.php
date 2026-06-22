@@ -1,5 +1,6 @@
 <?php
 require_once 'includes/session.php';
+require_once 'includes/Csrf.php';
 requireLogin();
 
 require_once 'config/database.php';
@@ -16,6 +17,11 @@ $user = $stmt->fetch();
 
 // Обработка сохранения
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!validateToken($_POST['csrf_token'] ?? null)) {
+        $_SESSION['error'] = 'Недійсний CSRF-токен. Оновіть сторінку і спробуйте ще раз.';
+        header('Location: ' . url('/profile-setup.php'));
+        exit;
+    }
     require_once 'controllers/ProfileController.php';
     require_once 'controllers/TrainerController.php';
     
@@ -371,6 +377,7 @@ $pageTitle = 'Заповнення профілю';
     </div>
 
     <form method="POST" id="profileForm" novalidate>
+            <?= csrfField(); ?>
         <!-- Step 1: Personal Data -->
         <div class="form-section active" data-section="1">
             <div class="section-title"><i class="bi bi-person text-primary"></i> Особисті дані</div>

@@ -1,14 +1,17 @@
 <?php
-define('DB_HOST', '127.0.1.31');
-define('DB_NAME', 'fitness_platform');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+require_once __DIR__ . '/../app/Database/Database.php';
 
-try {
-    $pdo = new PDO("mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8", DB_USER, DB_PASS);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-} catch(PDOException $e) {
-    die("Помилка підключення до бази даних: " . $e->getMessage());
+use App\Database\Database;
+
+if (!defined('DB_HOST')) {
+    require_once __DIR__ . '/Env.php';
+    Env::load();
+    define('DB_HOST', Env::get('DB_HOST', 'localhost'));
+    define('DB_PORT', Env::get('DB_PORT', '3306'));
+    define('DB_NAME', Env::get('DB_NAME', 'fitness_platform'));
+    define('DB_USER', Env::get('DB_USER', 'root'));
+    define('DB_PASS', Env::get('DB_PASS', ''));
 }
+
+$pdo = Database::getConnection();
 ?>

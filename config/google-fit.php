@@ -1,10 +1,13 @@
 <?php
-// Настройки Google Fit API
-define('GOOGLE_FIT_CLIENT_ID', '1097198779936-5lsqnde1ge5dvohie2eavj6irl461pbd.apps.googleusercontent.com');
-define('GOOGLE_FIT_CLIENT_SECRET', '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');
-define('GOOGLE_FIT_REDIRECT_URI', 'http://fitplatform.ua/google-fit-callback.php');
+require_once __DIR__ . '/Env.php';
 
-// Scopes для доступа к данным
+Env::load();
+
+// Google Fit API settings. Secrets must be supplied via environment variables.
+define('GOOGLE_FIT_CLIENT_ID', Env::get('GOOGLE_CLIENT_ID', ''));
+define('GOOGLE_FIT_CLIENT_SECRET', Env::get('GOOGLE_CLIENT_SECRET', ''));
+define('GOOGLE_FIT_REDIRECT_URI', rtrim((string) Env::get('APP_URL', 'http://localhost'), '/') . '/google-fit-callback.php');
+
 define('GOOGLE_FIT_SCOPES', implode(' ', [
     'https://www.googleapis.com/auth/fitness.activity.read',
     'https://www.googleapis.com/auth/fitness.activity.write',
@@ -16,7 +19,6 @@ define('GOOGLE_FIT_SCOPES', implode(' ', [
     'https://www.googleapis.com/auth/userinfo.profile'
 ]));
 
-// URL API Google Fit
 define('GOOGLE_FIT_API_URL', 'https://www.googleapis.com/fitness/v1/users/me');
 define('GOOGLE_OAUTH_URL', 'https://accounts.google.com/o/oauth2/v2/auth');
 define('GOOGLE_TOKEN_URL', 'https://oauth2.googleapis.com/token');

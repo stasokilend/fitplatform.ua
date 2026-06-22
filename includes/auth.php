@@ -35,8 +35,11 @@ function loginUser($email, $password) {
     $user = $stmt->fetch();
     
     if ($user && password_verify($password, $user['password_hash'])) {
-        // Очищаем старую сессию
+        // Очищаем старую сессию и защищаем от session fixation
         $_SESSION = array();
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
         
         // Устанавливаем новые значения
         $_SESSION['user_id'] = (int)$user['id'];
@@ -65,7 +68,7 @@ function logoutUser() {
         );
     }
     session_destroy();
-    header('Location: /index.php');
+    header('Location: ' . url('/index.php'));
     exit;
 }
 

@@ -5,8 +5,14 @@ ini_set('display_errors', 1);
 
 require_once __DIR__ . '/../includes/session.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/Csrf.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!validateToken($_POST['csrf_token'] ?? null)) {
+        $_SESSION['error'] = 'Недійсний CSRF-токен. Оновіть сторінку і спробуйте ще раз.';
+        header('Location: ' . url('/login.php'));
+        exit;
+    }
     $action = $_POST['action'] ?? '';
     
     if ($action === 'register') {
@@ -20,12 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Автоматический вход после регистрации
             $loginResult = loginUser($email, $password);
             if ($loginResult['success']) {
-                header('Location: /profile-setup.php');
+                header('Location: ' . url('/profile-setup.php'));
                 exit;
             }
         } else {
             $_SESSION['error'] = $result['error'];
-            header('Location: /register.php');
+            header('Location: ' . url('/register.php'));
             exit;
         }
     }
@@ -40,24 +46,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Проверяем, что сессия действительно создалась
             if (!isset($_SESSION['user_id'])) {
                 $_SESSION['error'] = 'Помилка сесії. Спробуйте ще раз.';
-                header('Location: /login.php');
+                header('Location: ' . url('/login.php'));
                 exit;
             }
             
             // Проверка заполнения профиля
             require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/Csrf.php';
             $profileCompleted = isProfileCompleted($_SESSION['user_id']);
             
             if (!$profileCompleted) {
-                header('Location: /profile-setup.php');
+                header('Location: ' . url('/profile-setup.php'));
                 exit;
             } else {
-                header('Location: /dashboard.php');
+                header('Location: ' . url('/dashboard.php'));
                 exit;
             }
         } else {
             $_SESSION['error'] = $result['error'];
-            header('Location: /login.php');
+            header('Location: ' . url('/login.php'));
             exit;
         }
     }
@@ -68,6 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Если не POST - перенаправляем на главную
-header('Location: /index.php');
+header('Location: ' . url('/index.php'));
 exit;
 ?>

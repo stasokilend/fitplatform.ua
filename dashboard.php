@@ -107,12 +107,6 @@ ob_start();
                                 <i class="bi bi-trophy"></i> Досягнення
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'settings' ? 'active' : ''; ?>" 
-                            href="/dashboard.php?page=settings">
-                                <i class="bi bi-gear"></i> Налаштування
-                            </a>
-                        </li>
                     <?php endif; ?>
                     
                     <!-- Для тренера -->
@@ -143,6 +137,14 @@ ob_start();
                             </a>
                         </li>
                     <?php endif; ?>
+                    
+                    <!-- Настройки доступны для всех ролей -->
+                    <li class="nav-item">
+                        <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'settings' ? 'active' : ''; ?>" 
+                           href="/dashboard.php?page=settings">
+                            <i class="bi bi-gear"></i> Налаштування
+                        </a>
+                    </li>
                     
                     <!-- Для администратора -->
                     <?php if ($role === 'admin'): ?>

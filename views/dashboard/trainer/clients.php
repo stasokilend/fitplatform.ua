@@ -34,7 +34,8 @@ $availableUsers = $trainer->getAvailableClients();
     <div class="row g-4" id="clientsContainer">
         <?php if (count($clients) > 0): ?>
             <?php foreach ($clients as $client): ?>
-                <div class="col-md-6 col-lg-4 client-card" data-status="<?php echo $client['status']; ?>">
+                <?php $clientStatus = $client['status'] ?? 'active'; ?>
+                <div class="col-md-6 col-lg-4 client-card" data-status="<?php echo htmlspecialchars($clientStatus); ?>">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-body">
                             <div class="d-flex align-items-center mb-3">

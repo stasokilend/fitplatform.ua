@@ -103,7 +103,7 @@ if ($action === 'toggle_exercise') {
     exit;
 }
 
-// --- ЗАВЕРШЕНИЕ ТРЕНИРОВКИ (ОБНОВЛЕНО) ---
+// --- ЗАВЕРШЕНИЕ ТРЕНИРОВКИ (ИСПРАВЛЕНО) ---
 if ($action === 'complete') {
     $workoutId = (int)($_POST['workout_id'] ?? 0);
     if (!$workoutId) {
@@ -111,29 +111,55 @@ if ($action === 'complete') {
         exit;
     }
     
-    $success = $workout->completeWorkout($workoutId);
+    // Получаем упражнения тренировки
+    $exercises = $workout->getWorkoutExercises($workoutId);
+    
+    // РАССЧИТЫВАЕМ КАЛОРИИ
+    $totalCalories = 0;
+    $completedCount = 0;
+    $totalExercises = count($exercises);
+    
+    foreach ($exercises as $exercise) {
+        if ($exercise['is_completed']) {
+            $completedCount++;
+            // Расчет калорий: calories_per_min * duration_min * sets
+            $caloriesPerMin = (float)($exercise['calories_per_min'] ?? 0);
+            $durationMin = (float)($exercise['duration_min'] ?? 0);
+            $sets = (int)($exercise['sets'] ?? 1);
+            
+            // Если есть длительность упражнения
+            if ($durationMin > 0 && $caloriesPerMin > 0) {
+                $totalCalories += $caloriesPerMin * $durationMin * $sets;
+            } else {
+                // Fallback: 5 ккал за упражнение
+                $totalCalories += 5;
+            }
+        }
+    }
+    
+    // Если калории переданы через POST - используем их (приоритет)
+    $postedCalories = (int)($_POST['calories'] ?? 0);
+    if ($postedCalories > 0) {
+        $totalCalories = $postedCalories;
+    }
+    
+    // Округляем
+    $totalCalories = (int)round($totalCalories);
+    
+    // Завершаем тренировку с сохранением калорий
+    $success = $workout->completeWorkout($workoutId, $totalCalories);
     
     if ($success) {
         // Обновляем геймификацию
         $gamification = new GamificationController($userId);
-        $exercises = $workout->getWorkoutExercises($workoutId);
-        $calories = (int)($_POST['calories'] ?? 0);
-        $completed = count(array_filter($exercises, function($ex) {
-            return $ex['is_completed'];
-        }));
-
-        if ($calories <= 0) {
-            $calories = 0;
-            foreach ($exercises as $exercise) {
-                if (!empty($exercise['is_completed'])) {
-                    $calories += (float)($exercise['calories_per_min'] ?? 0) * (int)($exercise['duration_min'] ?? 0);
-                }
-            }
-            $calories = (int)round($calories);
-        }
         
-        // Записываем завершение тренировки в геймификацию
-        $gamification->recordWorkoutCompleted($workoutId, $calories, $completed, count($exercises));
+        // Передаем правильные калории и количество выполненных упражнений
+        $gamification->recordWorkoutCompleted(
+            $workoutId, 
+            $totalCalories, 
+            $completedCount, 
+            $totalExercises
+        );
         
         // ПОЛНАЯ СИНХРОНИЗАЦИЯ ВСЕХ ДОСТИЖЕНИЙ
         $gamification->syncAchievements();
@@ -144,11 +170,18 @@ if ($action === 'complete') {
         $workoutData = $workout->getWorkout($workoutId);
         $notification->createFromTemplate('workout_completed', [
             'workout_name' => $workoutData['name'] ?? 'Тренування',
-            'calories' => $calories
+            'calories' => $totalCalories
         ]);
+        
+        echo json_encode([
+            'success' => true,
+            'calories' => $totalCalories,
+            'completed' => $completedCount,
+            'total' => $totalExercises
+        ]);
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Помилка завершення тренування']);
     }
-    
-    echo json_encode(['success' => $success]);
     exit;
 }
 

@@ -15,7 +15,6 @@ class WorkoutController {
      * Получение всех тренировок пользователя
      */
     public function getUserWorkouts($limit = 50, $offset = 0, $status = null) {
-        // Убеждаемся, что offset не отрицательный
         $offset = max(0, (int)$offset);
         $limit = max(1, (int)$limit);
         
@@ -65,7 +64,8 @@ class WorkoutController {
      */
     public function getWorkoutExercises($workoutId) {
         $stmt = $this->pdo->prepare("
-            SELECT pe.*, e.name, e.muscle_group, e.difficulty, e.description, e.calories_per_min
+            SELECT pe.*, e.name, e.muscle_group, e.difficulty, e.description, 
+                   e.calories_per_min, e.duration_min
             FROM plan_exercises pe
             JOIN exercises e ON pe.exercise_id = e.id
             WHERE pe.plan_id = ?
@@ -132,21 +132,22 @@ class WorkoutController {
     }
     
     /**
-     * Завершение тренировки
+     * Завершение тренировки с сохранением калорий
      */
-    public function completeWorkout($workoutId) {
+    public function completeWorkout($workoutId, $calories = 0) {
         $stmt = $this->pdo->prepare("
             UPDATE workout_plans 
-            SET status = 'completed', completed_at = NOW()
+            SET status = 'completed', 
+                completed_at = NOW(),
+                calories_burned = ?
             WHERE id = ? AND user_id = ? AND status <> 'completed'
         ");
-        $stmt->execute([$workoutId, $this->userId]);
+        $stmt->execute([$calories, $workoutId, $this->userId]);
         return $stmt->rowCount() > 0;
     }
     
-
     /**
-     * Удаление тренировки пользователя.
+     * Удаление тренировки
      */
     public function deleteWorkout($workoutId) {
         $stmt = $this->pdo->prepare("
@@ -154,12 +155,11 @@ class WorkoutController {
             WHERE id = ? AND user_id = ?
         ");
         $stmt->execute([(int)$workoutId, $this->userId]);
-
         return $stmt->rowCount() > 0;
     }
-
+    
     /**
-     * Добавление заметки к тренировке
+     * Добавление заметки
      */
     public function addNote($workoutId, $note) {
         $stmt = $this->pdo->prepare("
@@ -170,7 +170,7 @@ class WorkoutController {
     }
     
     /**
-     * Получение заметок к тренировке
+     * Получение заметок
      */
     public function getNotes($workoutId) {
         $stmt = $this->pdo->prepare("
@@ -219,7 +219,7 @@ class WorkoutController {
         $stmt->execute([$this->userId]);
         $stats['planned'] = $stmt->fetch()['total'] ?? 0;
         
-        // Всего калорий
+        // Всего калорий (сумма по завершенным тренировкам)
         $stmt = $this->pdo->prepare("
             SELECT SUM(calories_burned) as total FROM workout_plans 
             WHERE user_id = ? AND status = 'completed'
@@ -231,7 +231,7 @@ class WorkoutController {
     }
     
     /**
-     * Получение шаблонов тренировок
+     * Получение шаблонов
      */
     public function getTemplates($limit = 10) {
         $limit = max(1, (int)$limit);
@@ -262,7 +262,7 @@ class WorkoutController {
     }
     
     /**
-     * Резервный набор упражнений для шаблона без привязанных упражнений.
+     * Резервный набор упражнений
      */
     private function getFallbackTemplateExercises($difficulty, $focus) {
         $focusGroups = [
@@ -274,7 +274,7 @@ class WorkoutController {
         ];
         $groups = $focusGroups[$focus] ?? ['Ноги', 'Груди', 'Кор', 'Все тіло', 'Прес'];
         $placeholders = implode(',', array_fill(0, count($groups), '?'));
-
+        
         $stmt = $this->pdo->prepare("
             SELECT id as exercise_id, 3 as sets, 10 as reps, 0 as order_num
             FROM exercises
@@ -286,7 +286,7 @@ class WorkoutController {
         $stmt->execute(array_merge([$difficulty], $groups, $groups));
         return $stmt->fetchAll();
     }
-
+    
     /**
      * Создание тренировки из шаблона
      */
@@ -314,14 +314,12 @@ class WorkoutController {
             return false;
         }
         
-        // Добавляем упражнения из шаблона. Если у старой базы нет строк
-        // template_exercises, берём подходящие активные упражнения, чтобы
-        // пользователь не попадал в пустую тренировку.
+        // Добавляем упражнения
         $exercises = $this->getTemplateExercises($templateId);
         if (empty($exercises)) {
             $exercises = $this->getFallbackTemplateExercises($template['difficulty'], $template['focus']);
         }
-
+        
         foreach ($exercises as $index => $ex) {
             $this->addExercise($workoutId, $ex['exercise_id'], [
                 'sets' => $ex['sets'] ?? 3,
@@ -333,4 +331,3 @@ class WorkoutController {
         return $workoutId;
     }
 }
-?>

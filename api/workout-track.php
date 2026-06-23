@@ -103,6 +103,38 @@ if ($action === 'finish') {
 
     echo json_encode(['success' => $success]);
     exit;
+
+    // --- РАСЧЕТ КАЛОРИЙ ДЛЯ ТЕКУЩЕЙ ТРЕНИРОВКИ ---
+if ($action === 'calculate_calories') {
+    $workoutId = (int)($_POST['workout_id'] ?? 0);
+    if (!$workoutId) {
+        echo json_encode(['success' => false, 'error' => 'ID не вказано']);
+        exit;
+    }
+    
+    $exercises = $workout->getWorkoutExercises($workoutId);
+    $totalCalories = 0;
+    
+    foreach ($exercises as $exercise) {
+        if ($exercise['is_completed']) {
+            $caloriesPerMin = (float)($exercise['calories_per_min'] ?? 0);
+            $durationMin = (float)($exercise['duration_min'] ?? 0);
+            $sets = (int)($exercise['sets'] ?? 1);
+            
+            if ($durationMin > 0 && $caloriesPerMin > 0) {
+                $totalCalories += $caloriesPerMin * $durationMin * $sets;
+            } else {
+                $totalCalories += 5; // Fallback
+            }
+        }
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'calories' => (int)round($totalCalories)
+    ]);
+    exit;
+}
 }
 
 echo json_encode(['success' => false, 'error' => 'Невідома дія']);

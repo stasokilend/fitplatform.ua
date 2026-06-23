@@ -337,27 +337,27 @@ $isCompleted = $workout['status'] === 'completed';
     </div>
 
     <!-- Прогресс -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-semibold">Прогрес</span>
-                        <span class="fw-bold text-primary" id="workoutProgressPercent"><?php echo $progress; ?>%</span>
+<div class="row g-4 mb-4">
+    <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-semibold">Прогрес</span>
+                    <span class="fw-bold text-primary" id="workoutProgressPercent"><?php echo $progress; ?>%</span>
+                </div>
+                <div class="progress" style="height: 12px;">
+                    <div class="progress-bar bg-primary" id="workoutProgressBar" style="width: <?php echo $progress; ?>%; transition: width 0.5s;">
                     </div>
-                    <div class="progress" style="height: 12px;">
-                        <div class="progress-bar bg-primary" id="workoutProgressBar" style="width: <?php echo $progress; ?>%; transition: width 0.5s;">
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-between mt-2">
-                        <span class="text-muted small" id="workoutProgressText">
-                            <i class="bi bi-check-circle"></i> 
-                            <?php echo $workout['completed_exercises']; ?>/<?php echo $workout['total_exercises']; ?> виконано
-                        </span>
-                        <span class="text-muted small">
-                            <i class="bi bi-fire"></i> <?php echo $workout['calories_burned'] ?? 0; ?> ккал
-                        </span>
-                    </div>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <span class="text-muted small" id="workoutProgressText">
+                        <i class="bi bi-check-circle"></i> 
+                        <?php echo $workout['completed_exercises']; ?>/<?php echo $workout['total_exercises']; ?> виконано
+                    </span>
+                    <span class="text-muted small" id="workoutCaloriesDisplay">
+                        <i class="bi bi-fire text-danger"></i> 
+                        <span id="workoutCalories">0</span> ккал
+                    </span>
                 </div>
             </div>
         </div>
@@ -826,6 +826,33 @@ document.addEventListener('DOMContentLoaded', function() {
     // ===== ИНИЦИАЛИЗАЦИЯ =====
     updateDisplay();
     updateMainButton('start');
+
+    // Обновление калорий при завершении упражнения
+function updateCalories() {
+    const formData = new FormData();
+    formData.append('action', 'calculate_calories');
+    formData.append('workout_id', currentWorkoutId);
+    
+    fetch('/api/workout.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('workoutCalories').textContent = data.calories;
+        }
+    })
+    .catch(error => console.error('Ошибка:', error));
+}
+
+// Вызываем при каждом переключении упражнения
+document.querySelectorAll('.exercise-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+        // ... существующий код ...
+        updateCalories();
+    });
+});
 });
 </script>
 

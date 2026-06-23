@@ -64,22 +64,24 @@ class GamificationController {
         $this->loadStats();
     }
     
-    /**
-     * Обработка события завершения тренировки
-     */
-    public function recordWorkoutCompleted($workoutId, $calories, $exercisesCompleted, $totalExercises = null) {
-        $this->ensureGamificationStats();
-        
-        $this->updateStats($calories, $exercisesCompleted, true);
-
-        $this->checkWorkoutEventAchievements(
-            (int)$workoutId,
-            max(0, (int)$exercisesCompleted),
-            $totalExercises === null ? null : max(0, (int)$totalExercises)
-        );
-
-        $this->loadStats();
-    }
+/**
+ * Обработка события завершения тренировки
+ */
+public function recordWorkoutCompleted($workoutId, $calories, $exercisesCompleted, $totalExercises = null) {
+    // Обновляем статистику с калориями
+    $this->updateStats($calories, $exercisesCompleted, true);
+    
+    // Проверяем специальные достижения
+    $this->checkWorkoutEventAchievements(
+        (int)$workoutId,
+        max(0, (int)$exercisesCompleted),
+        $totalExercises === null ? null : max(0, (int)$totalExercises)
+    );
+    
+    // Полная синхронизация всех достижений
+    $this->syncAchievements();
+    $this->loadStats();
+}
 
     private function ensureGamificationStats()
     {

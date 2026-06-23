@@ -242,9 +242,94 @@ class TrainerController {
         ]);
         
         if ($success) {
-            return $this->pdo->lastInsertId();
+            $programId = $this->pdo->lastInsertId();
+            if (!empty($data['is_public'])) {
+                $this->notifySubscribersAboutNewProgram($programId, $data['name']);
+            }
+            return $programId;
         }
         return false;
+    }
+
+    /**
+     * Создание таблицы подписок на тренеров при необходимости.
+     */
+    private function ensureTrainerSubscriptionsTable() {
+        $this->pdo->exec("
+            CREATE TABLE IF NOT EXISTS trainer_subscriptions (
+                id INT NOT NULL AUTO_INCREMENT,
+                user_id INT NOT NULL,
+                trainer_id INT NOT NULL,
+                created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                UNIQUE KEY uniq_trainer_subscription (user_id, trainer_id),
+                KEY idx_trainer_subscriptions_trainer (trainer_id),
+                CONSTRAINT trainer_subscriptions_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                CONSTRAINT trainer_subscriptions_trainer_fk FOREIGN KEY (trainer_id) REFERENCES users (id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+        ");
+    }
+
+    /**
+     * Подписка пользователя на новые публичные программы тренера.
+     */
+    public function subscribeToTrainer($trainerId, $userId) {
+        $trainerId = (int)$trainerId;
+        $userId = (int)$userId;
+
+        if (!$trainerId || !$userId || $trainerId === $userId) {
+            return ['success' => false, 'error' => 'Неможливо підписатися на цього тренера'];
+        }
+
+        $this->ensureTrainerSubscriptionsTable();
+
+        $stmt = $this->pdo->prepare("SELECT id FROM users WHERE id = ? AND role = 'trainer' AND is_active = 1");
+        $stmt->execute([$trainerId]);
+        if (!$stmt->fetch()) {
+            return ['success' => false, 'error' => 'Тренера не знайдено'];
+        }
+
+        $stmt = $this->pdo->prepare("
+            INSERT INTO trainer_subscriptions (user_id, trainer_id)
+            VALUES (?, ?)
+            ON DUPLICATE KEY UPDATE created_at = created_at
+        ");
+        return ['success' => $stmt->execute([$userId, $trainerId])];
+    }
+
+    /**
+     * Уведомление подписчиков о новой публичной программе тренера.
+     */
+    private function notifySubscribersAboutNewProgram($programId, $programName) {
+        $this->ensureTrainerSubscriptionsTable();
+
+        $stmt = $this->pdo->prepare("SELECT full_name FROM users WHERE id = ?");
+        $stmt->execute([$this->trainerId]);
+        $trainerName = $stmt->fetch()['full_name'] ?? 'Тренер';
+
+        $stmt = $this->pdo->prepare("SELECT user_id FROM trainer_subscriptions WHERE trainer_id = ?");
+        $stmt->execute([$this->trainerId]);
+        $subscribers = $stmt->fetchAll();
+
+        require_once __DIR__ . '/NotificationController.php';
+        foreach ($subscribers as $subscriber) {
+            $notification = new NotificationController($subscriber['user_id']);
+            $created = $notification->createFromTemplate('trainer_new_program', [
+                'trainer_name' => $trainerName,
+                'program_name' => $programName,
+                'link' => '/dashboard.php?page=trainer-program-detail&id=' . $programId
+            ]);
+
+            if (!$created) {
+                $notification->create(
+                    'info',
+                    'Нова програма від тренера',
+                    $trainerName . ' опублікував(ла) нову програму «' . $programName . '».',
+                    'bi-file-earmark-plus',
+                    '/dashboard.php?page=trainer-program-detail&id=' . $programId
+                );
+            }
+        }
     }
     
     /**

@@ -10,14 +10,22 @@ if (!isLoggedIn()) {
     exit;
 }
 
+$userId = $_SESSION['user_id'];
+$trainer = new TrainerController($userId);
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+
+// --- ПОДПИСКА ПОЛЬЗОВАТЕЛЯ НА ТРЕНЕРА ---
+if ($action === 'subscribe_trainer') {
+    $trainerId = (int)($_POST['trainer_id'] ?? 0);
+    $result = $trainer->subscribeToTrainer($trainerId, $userId);
+    echo json_encode($result);
+    exit;
+}
+
 if ($_SESSION['user_role'] !== 'trainer' && $_SESSION['user_role'] !== 'admin') {
     echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
     exit;
 }
-
-$userId = $_SESSION['user_id'];
-$trainer = new TrainerController($userId);
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
 // --- ПЕРЕКЛЮЧЕНИЕ НА ПОЛЬЗОВАТЕЛЯ ---
 if ($action === 'switch_to_user') {

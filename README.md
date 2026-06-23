@@ -13,7 +13,7 @@ FitPlatform is a PHP fitness platform with user profiles, generated workouts, tr
 1. Copy `.env.example` to `.env`.
 2. Set `APP_URL` for your installation path, for example `http://localhost`, `https://fitplatform.ua` or `https://domain.com/subfolder`.
 3. Set database credentials.
-4. Set Google OAuth credentials if Google Fit is used.
+4. Set Google OAuth credentials if Google Fit is used. By default the redirect URI is generated as `APP_URL` + `/google-fit-callback.php`; add that exact URL to Google Cloud Console or override it with `GOOGLE_FIT_REDIRECT_URI`.
 
 Secrets must not be committed. `.env` is ignored by Git.
 

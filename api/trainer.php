@@ -570,6 +570,41 @@ if ($action === 'add_schedule') {
     exit;
 }
 
+
+// --- РЕДАГУВАННЯ ЗАНЯТТЯ В РОЗКЛАДІ ---
+if ($action === 'update_schedule') {
+    $scheduleId = (int)($_POST['schedule_id'] ?? 0);
+    $clientId = (int)($_POST['client_id'] ?? 0);
+    $dayOfWeek = $_POST['day_of_week'] ?? '';
+    $startTime = $_POST['start_time'] ?? '';
+    $endTime = $_POST['end_time'] ?? '';
+    $status = $_POST['status'] ?? 'booked';
+    $date = $_POST['date'] ?? null;
+    $notes = trim($_POST['notes'] ?? '');
+
+    if (!$scheduleId || !$clientId || !$dayOfWeek || !$startTime || !$endTime) {
+        echo json_encode(['success' => false, 'error' => 'Заповніть всі обов\'язкові поля']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("SELECT 1 FROM trainer_clients WHERE trainer_id = ? AND client_id = ? AND status = 'active'");
+    $stmt->execute([$userId, $clientId]);
+    if (!$stmt->fetch()) {
+        echo json_encode(['success' => false, 'error' => 'Клієнт не знайдений або неактивний']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("
+        UPDATE trainer_schedule
+        SET client_id = ?, day_of_week = ?, start_time = ?, end_time = ?, date = ?, status = ?, notes = ?
+        WHERE id = ? AND trainer_id = ?
+    ");
+    $success = $stmt->execute([$clientId, $dayOfWeek, $startTime, $endTime, $date, $status, $notes, $scheduleId, $userId]);
+
+    echo json_encode(['success' => $success]);
+    exit;
+}
+
 // --- УДАЛЕНИЕ ЗАНЯТИЯ ИЗ РАСПИСАНИЯ ---
 if ($action === 'delete_schedule') {
     $scheduleId = (int)($_POST['schedule_id'] ?? 0);

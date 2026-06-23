@@ -90,6 +90,12 @@ ob_start();
                                 <i class="bi bi-heart-pulse"></i> Здоров'я
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'calories' ? 'active' : ''; ?>" 
+                               href="/dashboard.php?page=calories">
+                                <i class="bi bi-fire"></i> Калорії
+                            </a>
+                        </li>
                         <!-- В десктопном меню -->
                         <li class="nav-item">
                             <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'chat' ? 'active' : ''; ?>" 

@@ -68,8 +68,10 @@ class GamificationController {
         // Обновляем опыт и уровень
         $this->addExperience($exercisesCompleted * 5 + $calories / 10);
         
-        // Проверяем достижения
-        $this->checkAchievements();
+        // Проверяем достижения, которые зависят от накопительной статистики.
+        // Это гарантирует активацию порогов сразу после события, например
+        // `first_workout` после первой завершенной тренировки.
+        $this->checkStatMilestoneAchievements();
         
         // Обновляем локальную статистику
         $this->loadStats();
@@ -89,6 +91,52 @@ class GamificationController {
         );
 
         $this->loadStats();
+    }
+
+    /**
+     * Ручная синхронизация всех достижений пользователя.
+     * Полезно для API/админских задач и повторной проверки после изменения
+     * правил: не начисляет статистику повторно, только активирует достигнутые
+     * достижения или обновляет прогресс.
+     */
+    public function syncAchievements() {
+        $this->loadStats();
+        $this->checkAchievements();
+        $this->checkLevelAchievements($this->getCurrentLevelNumber());
+        $this->loadStats();
+    }
+
+    /**
+     * Проверка накопительных достижений по фактическим событиям платформы:
+     * завершение тренировки, серия дней, калории, упражнения и уровень.
+     */
+    private function checkStatMilestoneAchievements() {
+        $this->checkAchievementsByType('workouts', (int)($this->stats['total_workouts'] ?? 0));
+        $this->checkAchievementsByType('streak', (int)($this->stats['current_streak'] ?? 0));
+        $this->checkAchievementsByType('calories', (int)($this->stats['total_calories'] ?? 0));
+        $this->checkAchievementsByType('exercises', (int)($this->stats['total_exercises_completed'] ?? 0));
+        $this->checkLevelAchievements($this->getCurrentLevelNumber());
+    }
+
+    /**
+     * Проверка всех достижений одного типа с обновлением прогресса.
+     */
+    private function checkAchievementsByType($requirementType, $currentProgress) {
+        $stmt = $this->pdo->prepare("
+            SELECT code, requirement_value
+            FROM achievements
+            WHERE is_active = 1 AND requirement_type = ?
+            ORDER BY requirement_value ASC
+        ");
+        $stmt->execute([$requirementType]);
+
+        foreach ($stmt->fetchAll() as $achievement) {
+            if ($currentProgress >= (int)$achievement['requirement_value']) {
+                $this->unlockAchievement($achievement['code']);
+            } else {
+                $this->updateProgress($achievement['code'], $currentProgress);
+            }
+        }
     }
 
     /**
@@ -248,6 +296,17 @@ class GamificationController {
             }
         }
     }
+
+    /**
+     * Текущий уровень пользователя без создания лишних побочных эффектов.
+     */
+    private function getCurrentLevelNumber() {
+        $stmt = $this->pdo->prepare("SELECT level FROM user_levels WHERE user_id = ?");
+        $stmt->execute([$this->userId]);
+        $level = $stmt->fetch();
+
+        return $level ? (int)$level['level'] : 1;
+    }
     
     /**
      * Проверка всех достижений
@@ -313,6 +372,9 @@ public function getAchievementsByCategory() {
             case 'special':
                 if (($achievement['code'] ?? '') === 'consistency') {
                     return $this->getFullyCompletedWorkoutsCount();
+                }
+                if (preg_match('/^level_(\d+)$/', $achievement['code'] ?? '', $matches)) {
+                    return $this->getCurrentLevelNumber();
                 }
                 return 0;
             default:

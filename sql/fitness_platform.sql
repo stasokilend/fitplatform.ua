@@ -69,7 +69,12 @@ INSERT INTO `achievements` (`id`, `code`, `name`, `description`, `icon`, `catego
 (16, 'early_bird', 'Рання пташка', 'Виконайте тренування до 7:00', 'bi-sunrise', 'special', 'special', 1, 15, 'bronze', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0),
 (17, 'night_owl', 'Нічна сова', 'Виконайте тренування після 22:00', 'bi-moon', 'special', 'special', 1, 15, 'bronze', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0),
 (18, 'perfect_workout', 'Ідеальне тренування', 'Виконайте всі вправи тренування', 'bi-check-circle', 'special', 'special', 1, 20, 'gold', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0),
-(19, 'consistency', 'Послідовність', 'Повністю виконайте 10 тренувань', 'bi-award', 'special', 'special', 10, 30, 'silver', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0);
+(19, 'consistency', 'Послідовність', 'Повністю виконайте 10 тренувань', 'bi-award', 'special', 'special', 10, 30, 'silver', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0),
+(20, 'level_5', 'Рівень 5', 'Досягніть 5 рівня', 'bi-graph-up-arrow', 'special', 'special', 5, 15, 'bronze', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0),
+(21, 'level_10', 'Рівень 10', 'Досягніть 10 рівня', 'bi-graph-up-arrow', 'special', 'special', 10, 30, 'silver', 1, '2026-06-19 21:57:38', NULL, 'uncommon', 'bi-trophy', 0),
+(22, 'level_25', 'Рівень 25', 'Досягніть 25 рівня', 'bi-graph-up-arrow', 'special', 'special', 25, 60, 'gold', 1, '2026-06-19 21:57:38', NULL, 'rare', 'bi-trophy', 0),
+(23, 'level_50', 'Рівень 50', 'Досягніть 50 рівня', 'bi-graph-up-arrow', 'special', 'special', 50, 100, 'platinum', 1, '2026-06-19 21:57:38', NULL, 'epic', 'bi-trophy', 0),
+(24, 'level_100', 'Рівень 100', 'Досягніть 100 рівня', 'bi-gem', 'special', 'special', 100, 200, 'platinum', 1, '2026-06-19 21:57:38', NULL, 'legendary', 'bi-trophy', 0);
 
 -- --------------------------------------------------------
 

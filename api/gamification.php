@@ -35,6 +35,16 @@ if ($action === 'recent') {
     exit;
 }
 
+// --- СИНХРОНИЗАЦИЯ ДОСТИЖЕНИЙ БЕЗ ПОВТОРНОГО НАЧИСЛЕНИЯ СТАТИСТИКИ ---
+if ($action === 'sync') {
+    $gamification->syncAchievements();
+    echo json_encode([
+        'success' => true,
+        'data' => $gamification->getGamificationStats()
+    ]);
+    exit;
+}
+
 // --- ОБНОВЛЕНИЕ СТАТИСТИКИ ПОСЛЕ ТРЕНИРОВКИ ---
 if ($action === 'update_workout') {
     $calories = (int)($_POST['calories'] ?? 0);

@@ -295,9 +295,8 @@ class TrainerController {
                 PRIMARY KEY (id),
                 UNIQUE KEY uniq_trainer_subscription (user_id, trainer_id),
                 KEY idx_trainer_subscriptions_trainer (trainer_id),
-                CONSTRAINT trainer_subscriptions_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-                CONSTRAINT trainer_subscriptions_trainer_fk FOREIGN KEY (trainer_id) REFERENCES users (id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+                KEY idx_trainer_subscriptions_user (user_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         ");
     }
 
@@ -312,20 +311,30 @@ class TrainerController {
             return ['success' => false, 'error' => 'Неможливо підписатися на цього тренера'];
         }
 
-        $this->ensureTrainerSubscriptionsTable();
+        try {
+            $this->ensureTrainerSubscriptionsTable();
 
-        $stmt = $this->pdo->prepare("SELECT id FROM users WHERE id = ? AND role = 'trainer' AND is_active = 1");
-        $stmt->execute([$trainerId]);
-        if (!$stmt->fetch()) {
-            return ['success' => false, 'error' => 'Тренера не знайдено'];
+            $stmt = $this->pdo->prepare("SELECT id FROM users WHERE id = ? AND role = 'trainer' AND is_active = 1");
+            $stmt->execute([$trainerId]);
+            if (!$stmt->fetch()) {
+                return ['success' => false, 'error' => 'Тренера не знайдено'];
+            }
+
+            $stmt = $this->pdo->prepare("
+                INSERT INTO trainer_subscriptions (user_id, trainer_id)
+                VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE created_at = created_at
+            ");
+            $success = $stmt->execute([$userId, $trainerId]);
+
+            return [
+                'success' => $success,
+                'message' => $success ? 'Ви підписалися на тренера' : 'Не вдалося оформити підписку'
+            ];
+        } catch (PDOException $e) {
+            error_log('Trainer subscribe error: ' . $e->getMessage());
+            return ['success' => false, 'error' => 'Не вдалося оформити підписку'];
         }
-
-        $stmt = $this->pdo->prepare("
-            INSERT INTO trainer_subscriptions (user_id, trainer_id)
-            VALUES (?, ?)
-            ON DUPLICATE KEY UPDATE created_at = created_at
-        ");
-        return ['success' => $stmt->execute([$userId, $trainerId])];
     }
 
     /**

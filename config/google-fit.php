@@ -1,12 +1,9 @@
 <?php
-require_once __DIR__ . '/Env.php';
-
-Env::load();
-
-// Google Fit API settings. Secrets must be supplied via environment variables.
-define('GOOGLE_FIT_CLIENT_ID', Env::get('GOOGLE_CLIENT_ID', '1097198779936-5lsqnde1ge5dvohie2eavj6irl461pbd.apps.googleusercontent.com'));
-define('GOOGLE_FIT_CLIENT_SECRET', Env::get('GOOGLE_CLIENT_SECRET', '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'));
-define('GOOGLE_FIT_REDIRECT_URI', rtrim((string) Env::get('APP_URL', 'http://127.0.1.31'), '/') . '/google-fit-callback.php');
+// Google Fit API settings are defined directly here so the integration does not
+// depend on loading values from .env at runtime.
+define('GOOGLE_FIT_CLIENT_ID', '1097198779936-5lsqnde1ge5dvohie2eavj6irl461pbd.apps.googleusercontent.com');
+define('GOOGLE_FIT_CLIENT_SECRET', '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');
+define('GOOGLE_FIT_REDIRECT_URI', 'http://127.0.1.31/google-fit-callback.php');
 
 define('GOOGLE_FIT_SCOPES', implode(' ', [
     'https://www.googleapis.com/auth/fitness.activity.read',

@@ -121,6 +121,16 @@ if ($action === 'complete') {
         $completed = count(array_filter($exercises, function($ex) {
             return $ex['is_completed'];
         }));
+
+        if ($calories <= 0) {
+            $calories = 0;
+            foreach ($exercises as $exercise) {
+                if (!empty($exercise['is_completed'])) {
+                    $calories += (float)($exercise['calories_per_min'] ?? 0) * (int)($exercise['duration_min'] ?? 0);
+                }
+            }
+            $calories = (int)round($calories);
+        }
         
         $gamification->updateStats($calories, $completed, true);
         
@@ -135,6 +145,24 @@ if ($action === 'complete') {
     }
     
     echo json_encode(['success' => $success]);
+    exit;
+}
+
+
+// --- УДАЛЕНИЕ ТРЕНИРОВКИ ---
+if ($action === 'delete') {
+    $workoutId = (int)($_POST['workout_id'] ?? 0);
+
+    if (!$workoutId) {
+        echo json_encode(['success' => false, 'error' => 'ID не вказано']);
+        exit;
+    }
+
+    $success = $workout->deleteWorkout($workoutId);
+    echo json_encode([
+        'success' => $success,
+        'error' => $success ? null : 'Тренування не знайдено або вже видалено'
+    ]);
     exit;
 }
 

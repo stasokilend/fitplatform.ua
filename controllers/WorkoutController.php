@@ -143,6 +143,20 @@ class WorkoutController {
         return $stmt->execute([$workoutId, $this->userId]);
     }
     
+
+    /**
+     * Удаление тренировки пользователя.
+     */
+    public function deleteWorkout($workoutId) {
+        $stmt = $this->pdo->prepare("
+            DELETE FROM workout_plans
+            WHERE id = ? AND user_id = ?
+        ");
+        $stmt->execute([(int)$workoutId, $this->userId]);
+
+        return $stmt->rowCount() > 0;
+    }
+
     /**
      * Добавление заметки к тренировке
      */

@@ -4,19 +4,19 @@ require_once __DIR__ . '/../config/database.php';
 class TrainerController {
     private $pdo;
     private $trainerId;
-    
+
     public function __construct($trainerId) {
         global $pdo;
         $this->pdo = $pdo;
         $this->trainerId = $trainerId;
     }
-    
+
     /**
      * Получение всех клиентов тренера
      */
     public function getClients($status = 'active') {
         $sql = "
-            SELECT 
+            SELECT
                 u.*,
                 up.age, up.weight, up.height, up.fitness_level, up.goal_type,
                 tc.notes, tc.goals, tc.health_conditions, tc.last_visit,
@@ -25,7 +25,7 @@ class TrainerController {
                  JOIN chats c ON cm.chat_id = c.id
                  WHERE (c.user1_id = u.id OR c.user2_id = u.id)
                    AND (c.user1_id = ? OR c.user2_id = ?)
-                   AND cm.sender_id = u.id 
+                   AND cm.sender_id = u.id
                    AND cm.is_read = 0) as unread_messages
             FROM trainer_clients tc
             JOIN users u ON tc.client_id = u.id
@@ -33,12 +33,12 @@ class TrainerController {
             WHERE tc.trainer_id = ? AND tc.status = ?
             ORDER BY u.full_name
         ";
-        
+
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$this->trainerId, $this->trainerId, $this->trainerId, $status]);
         return $stmt->fetchAll();
     }
-    
+
 
     /**
      * Получение пользователей, которых тренер может добавить в клиенты.
@@ -130,7 +130,7 @@ class TrainerController {
      */
     public function getClient($clientId) {
         $stmt = $this->pdo->prepare("
-            SELECT 
+            SELECT
                 u.*,
                 up.age, up.weight, up.height, up.gender,
                 up.fitness_level, up.goal_type, up.target_weight,
@@ -141,7 +141,7 @@ class TrainerController {
                  JOIN chats c ON cm.chat_id = c.id
                  WHERE (c.user1_id = u.id OR c.user2_id = u.id)
                    AND (c.user1_id = ? OR c.user2_id = ?)
-                   AND cm.sender_id = u.id 
+                   AND cm.sender_id = u.id
                    AND cm.is_read = 0) as unread_messages
             FROM trainer_clients tc
             JOIN users u ON tc.client_id = u.id
@@ -151,14 +151,14 @@ class TrainerController {
         $stmt->execute([$this->trainerId, $this->trainerId, $this->trainerId, $clientId]);
         return $stmt->fetch();
     }
-    
+
     /**
      * Получение прогресса клиента
      */
     public function getClientProgress($clientId) {
         // Тренировки клиента
         $stmt = $this->pdo->prepare("
-            SELECT 
+            SELECT
                 COUNT(*) as total_workouts,
                 COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_workouts,
                 SUM(total_duration_min) as total_minutes,
@@ -168,10 +168,10 @@ class TrainerController {
         ");
         $stmt->execute([$clientId]);
         $workoutStats = $stmt->fetch();
-        
+
         // Текущая программа
         $stmt = $this->pdo->prepare("
-            SELECT 
+            SELECT
                 cp.*,
                 tp.name as program_name,
                 tp.duration_weeks,
@@ -184,33 +184,64 @@ class TrainerController {
         ");
         $stmt->execute([$clientId]);
         $currentProgram = $stmt->fetch();
-        
-        // Прогресс веса
-        $stmt = $this->pdo->prepare("
-            SELECT 
-                weight,
-                DATE(created_at) as date
-            FROM user_profiles_history
-            WHERE user_id = ?
-            ORDER BY created_at DESC
-            LIMIT 10
-        ");
-        $stmt->execute([$clientId]);
-        $weightHistory = $stmt->fetchAll();
-        
+
+        $weightHistory = $this->getClientWeightHistory($clientId);
+
         return [
             'workout_stats' => $workoutStats,
             'current_program' => $currentProgram,
             'weight_history' => $weightHistory
         ];
     }
-    
+
+
+    /**
+     * Получение истории веса клиента.
+     *
+     * В старых установках таблица user_profiles_history может отсутствовать, поэтому
+     * вместо падения страницы возвращаем текущий вес из user_profiles как одну точку.
+     */
+    private function getClientWeightHistory($clientId) {
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT
+                    weight,
+                    DATE(created_at) as date
+                FROM user_profiles_history
+                WHERE user_id = ? AND weight IS NOT NULL
+                ORDER BY created_at DESC
+                LIMIT 10
+            ");
+            $stmt->execute([$clientId]);
+            return $stmt->fetchAll();
+        } catch (PDOException $e) {
+            if ($e->getCode() !== '42S02') {
+                throw $e;
+            }
+
+            error_log('User profiles history table is missing, using current profile weight: ' . $e->getMessage());
+
+            $stmt = $this->pdo->prepare("
+                SELECT
+                    weight,
+                    DATE(updated_at) as date
+                FROM user_profiles
+                WHERE user_id = ? AND weight IS NOT NULL
+                LIMIT 1
+            ");
+            $stmt->execute([$clientId]);
+            $currentWeight = $stmt->fetch();
+
+            return $currentWeight ? [$currentWeight] : [];
+        }
+    }
+
     /**
      * Получение программ тренера
      */
     public function getPrograms() {
         $stmt = $this->pdo->prepare("
-            SELECT 
+            SELECT
                 tp.*,
                 (SELECT COUNT(*) FROM program_exercises WHERE program_id = tp.id) as exercises_count,
                 (SELECT COUNT(*) FROM client_programs WHERE program_id = tp.id) as clients_count
@@ -221,7 +252,7 @@ class TrainerController {
         $stmt->execute([$this->trainerId]);
         return $stmt->fetchAll();
     }
-    
+
     /**
      * Создание программы
      */
@@ -230,7 +261,7 @@ class TrainerController {
             INSERT INTO trainer_programs (trainer_id, name, description, difficulty, duration_weeks, sessions_per_week, is_public)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
-        
+
         $success = $stmt->execute([
             $this->trainerId,
             $data['name'],
@@ -240,7 +271,7 @@ class TrainerController {
             $data['sessions_per_week'],
             $data['is_public'] ?? 0
         ]);
-        
+
         if ($success) {
             $programId = $this->pdo->lastInsertId();
             if (!empty($data['is_public'])) {
@@ -331,7 +362,7 @@ class TrainerController {
             }
         }
     }
-    
+
     /**
      * Добавление упражнения в программу
      */
@@ -340,7 +371,7 @@ class TrainerController {
             INSERT INTO program_exercises (program_id, exercise_id, day, sets, reps, rest_seconds, notes, order_num)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        
+
         return $stmt->execute([
             $programId,
             $exerciseId,
@@ -352,7 +383,7 @@ class TrainerController {
             $data['order_num'] ?? 0
         ]);
     }
-    
+
     /**
      * Назначение программы клиенту
      */
@@ -361,10 +392,10 @@ class TrainerController {
             INSERT INTO client_programs (client_id, program_id, trainer_id, start_date, status)
             VALUES (?, ?, ?, ?, 'active')
         ");
-        
+
         return $stmt->execute([$clientId, $programId, $this->trainerId, $startDate]);
     }
-    
+
     /**
      * Создание записи в расписании
      */
@@ -373,7 +404,7 @@ class TrainerController {
             INSERT INTO trainer_schedule (trainer_id, client_id, day_of_week, start_time, end_time, date, notes)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
-        
+
         return $stmt->execute([
             $this->trainerId,
             $data['client_id'] ?? null,
@@ -384,37 +415,37 @@ class TrainerController {
             $data['notes'] ?? null
         ]);
     }
-    
+
     /**
      * Получение расписания на неделю
      */
     public function getSchedule($weekStart) {
         $stmt = $this->pdo->prepare("
-            SELECT 
+            SELECT
                 ts.*,
                 u.full_name as client_name
             FROM trainer_schedule ts
             LEFT JOIN users u ON ts.client_id = u.id
-            WHERE ts.trainer_id = ? 
+            WHERE ts.trainer_id = ?
               AND ts.date BETWEEN ? AND DATE_ADD(?, INTERVAL 7 DAY)
             ORDER BY ts.date, ts.start_time
         ");
         $stmt->execute([$this->trainerId, $weekStart, $weekStart]);
         return $stmt->fetchAll();
     }
-    
+
     /**
      * Проверка, есть ли у тренера активные клиенты
      */
     public function hasActiveClients() {
         $stmt = $this->pdo->prepare("
-            SELECT COUNT(*) as count FROM trainer_clients 
+            SELECT COUNT(*) as count FROM trainer_clients
             WHERE trainer_id = ? AND status = 'active'
         ");
         $stmt->execute([$this->trainerId]);
         return ($stmt->fetch()['count'] ?? 0) > 0;
     }
-    
+
     /**
      * Изменение роли тренера на обычного пользователя
      */
@@ -422,28 +453,28 @@ class TrainerController {
         try {
             if ($this->hasActiveClients()) {
                 return [
-                    'success' => false, 
+                    'success' => false,
                     'error' => 'У вас є активні клієнти. Спочатку передайте їх іншому тренеру.'
                 ];
             }
-            
+
             $this->pdo->beginTransaction();
-            
+
             $stmt = $this->pdo->prepare("UPDATE users SET role = 'user' WHERE id = ?");
             $success = $stmt->execute([$this->trainerId]);
-            
+
             if ($success) {
                 $stmt = $this->pdo->prepare("UPDATE trainer_programs SET is_active = 0 WHERE trainer_id = ?");
                 $stmt->execute([$this->trainerId]);
-                
+
                 $stmt = $this->pdo->prepare("UPDATE trainer_clients SET status = 'inactive' WHERE trainer_id = ?");
                 $stmt->execute([$this->trainerId]);
-                
+
                 $this->pdo->commit();
                 $_SESSION['user_role'] = 'user';
                 return ['success' => true];
             }
-            
+
             $this->pdo->rollBack();
             return ['success' => false, 'error' => 'Помилка зміни ролі'];
         } catch (Exception $e) {
@@ -451,7 +482,7 @@ class TrainerController {
             return ['success' => false, 'error' => 'Помилка: ' . $e->getMessage()];
         }
     }
-    
+
     /**
  * Изменение роли обычного пользователя на тренера
  */
@@ -461,105 +492,105 @@ public function switchToTrainer() {
         $stmt = $this->pdo->prepare("SELECT role FROM users WHERE id = ?");
         $stmt->execute([$this->trainerId]);
         $user = $stmt->fetch();
-        
+
         if ($user['role'] === 'trainer') {
             return ['success' => false, 'error' => 'Ви вже є тренером'];
         }
-        
+
         // Меняем роль
         $stmt = $this->pdo->prepare("
             UPDATE users SET role = 'trainer' WHERE id = ?
         ");
         $success = $stmt->execute([$this->trainerId]);
-        
+
         if ($success) {
             // Обновляем сессию
             $_SESSION['user_role'] = 'trainer';
             return ['success' => true];
         }
-        
+
         return ['success' => false, 'error' => 'Помилка зміни ролі'];
-        
+
     } catch (Exception $e) {
         return ['success' => false, 'error' => 'Помилка: ' . $e->getMessage()];
     }
 }
-    
+
     public function getActiveClientsCount() {
         $stmt = $this->pdo->prepare("
-            SELECT COUNT(*) as count FROM trainer_clients 
+            SELECT COUNT(*) as count FROM trainer_clients
             WHERE trainer_id = ? AND status = 'active'
         ");
         $stmt->execute([$this->trainerId]);
         return (int)($stmt->fetch()['count'] ?? 0);
     }
-    
+
     public function transferClients($newTrainerId) {
         $stmt = $this->pdo->prepare("SELECT id FROM users WHERE id = ? AND role = 'trainer'");
         $stmt->execute([$newTrainerId]);
         if (!$stmt->fetch()) {
             return ['success' => false, 'error' => 'Тренера не знайдено'];
         }
-        
+
         $stmt = $this->pdo->prepare("
-            UPDATE trainer_clients 
-            SET trainer_id = ? 
+            UPDATE trainer_clients
+            SET trainer_id = ?
             WHERE trainer_id = ? AND status = 'active'
         ");
         $success = $stmt->execute([$newTrainerId, $this->trainerId]);
         return ['success' => $success];
     }
-    
+
     public function getAvailableTrainers() {
         $stmt = $this->pdo->prepare("
-            SELECT id, full_name, email, specialty 
-            FROM users 
+            SELECT id, full_name, email, specialty
+            FROM users
             WHERE role = 'trainer' AND id != ? AND is_active = 1
             ORDER BY full_name
         ");
         $stmt->execute([$this->trainerId]);
         return $stmt->fetchAll();
     }
-    
+
     /**
      * Получение статистики тренера
      */
     public function getStats() {
         $stats = [];
-        
+
         $stmt = $this->pdo->prepare("
-            SELECT COUNT(*) as total FROM trainer_clients 
+            SELECT COUNT(*) as total FROM trainer_clients
             WHERE trainer_id = ? AND status = 'active'
         ");
         $stmt->execute([$this->trainerId]);
         $stats['active_clients'] = $stmt->fetch()['total'] ?? 0;
-        
+
         $stmt = $this->pdo->prepare("
-            SELECT COUNT(*) as total FROM trainer_programs 
+            SELECT COUNT(*) as total FROM trainer_programs
             WHERE trainer_id = ? AND is_active = 1
         ");
         $stmt->execute([$this->trainerId]);
         $stats['programs'] = $stmt->fetch()['total'] ?? 0;
-        
+
         // Непрочитанные сообщения в чатах
         $stmt = $this->pdo->prepare("
-            SELECT COUNT(*) as total 
+            SELECT COUNT(*) as total
             FROM chat_messages cm
             JOIN chats c ON cm.chat_id = c.id
-            WHERE (c.user1_id = ? OR c.user2_id = ?) 
-              AND cm.sender_id != ? 
+            WHERE (c.user1_id = ? OR c.user2_id = ?)
+              AND cm.sender_id != ?
               AND cm.is_read = 0
         ");
         $stmt->execute([$this->trainerId, $this->trainerId, $this->trainerId]);
         $stats['unread_messages'] = $stmt->fetch()['total'] ?? 0;
-        
+
         $stmt = $this->pdo->prepare("
-            SELECT COUNT(*) as total FROM trainer_schedule 
+            SELECT COUNT(*) as total FROM trainer_schedule
             WHERE trainer_id = ? AND date = CURDATE() AND status = 'booked'
         ");
         $stmt->execute([$this->trainerId]);
         $stats['today_sessions'] = $stmt->fetch()['total'] ?? 0;
-        
+
         return $stats;
     }
 }

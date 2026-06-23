@@ -54,9 +54,8 @@ $pdo->exec("
         PRIMARY KEY (id),
         UNIQUE KEY uniq_trainer_subscription (user_id, trainer_id),
         KEY idx_trainer_subscriptions_trainer (trainer_id),
-        CONSTRAINT trainer_subscriptions_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-        CONSTRAINT trainer_subscriptions_trainer_fk FOREIGN KEY (trainer_id) REFERENCES users (id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+        KEY idx_trainer_subscriptions_user (user_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 ");
 
 // Проверяем, назначена ли программа пользователю
@@ -102,10 +101,6 @@ $difficultyColors = [
                 <span class="badge bg-success fs-6 px-3 py-2 d-flex align-items-center">
                     <i class="bi bi-check-circle me-2"></i> Призначено
                 </span>
-            <?php elseif ($program['trainer_id'] != $userId): ?>
-                <button class="btn <?php echo $isSubscribed ? 'btn-success' : 'btn-primary btn-gradient'; ?> subscribe-trainer-btn" <?php echo $isSubscribed ? 'disabled' : ''; ?>>
-                    <i class="bi <?php echo $isSubscribed ? 'bi-check-circle' : 'bi-bell'; ?>"></i> <?php echo $isSubscribed ? 'Ви підписані' : 'Підписатися на тренера'; ?>
-                </button>
             <?php endif; ?>
             <a href="/dashboard.php?page=trainer-programs" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Назад
@@ -163,7 +158,7 @@ $difficultyColors = [
                     <?php if ($program['trainer_id'] != $userId && !$isAssigned): ?>
                         <hr>
                         <div class="d-grid gap-2">
-                            <button class="btn <?php echo $isSubscribed ? 'btn-success' : 'btn-primary btn-gradient'; ?> subscribe-trainer-btn" <?php echo $isSubscribed ? 'disabled' : ''; ?>>
+                            <button class="btn <?php echo $isSubscribed ? 'btn-success' : 'btn-primary btn-gradient'; ?> subscribe-trainer-btn" data-trainer-id="<?php echo (int)$program['trainer_id']; ?>" <?php echo $isSubscribed ? 'disabled' : ''; ?>>
                                 <i class="bi <?php echo $isSubscribed ? 'bi-check-circle' : 'bi-bell'; ?>"></i> <?php echo $isSubscribed ? 'Ви підписані' : 'Підписатися на тренера'; ?>
                             </button>
                             <small class="text-muted text-center">Отримуйте повідомлення про нові програми цього тренера</small>
@@ -262,13 +257,28 @@ document.querySelectorAll('.subscribe-trainer-btn').forEach((btn) => {
 
         const formData = new FormData();
         formData.append('action', 'subscribe_trainer');
-        formData.append('trainer_id', <?php echo (int)$program['trainer_id']; ?>);
+        formData.append('trainer_id', btn.dataset.trainerId);
 
         fetch('/api/trainer.php', {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: { 'Accept': 'application/json' }
         })
-            .then(response => response.json())
+            .then(async (response) => {
+                const text = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (error) {
+                    throw new Error(text || 'Некоректна відповідь сервера');
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Помилка сервера');
+                }
+
+                return data;
+            })
             .then(data => {
                 if (data.success) {
                     showToast('Ви підписалися на тренера. Нові програми будуть приходити в повідомлення.', 'success');

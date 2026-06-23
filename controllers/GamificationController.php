@@ -12,6 +12,7 @@ class GamificationController {
         $this->pdo = $pdo;
         $this->userId = $userId;
         $this->loadStats();
+        $this->ensureFirstWorkoutAchievementExists();
     }
     
     /**
@@ -32,6 +33,23 @@ class GamificationController {
             $stmt = $this->pdo->prepare("SELECT * FROM user_gamification_stats WHERE user_id = ?");
             $stmt->execute([$this->userId]);
             $this->stats = $stmt->fetch();
+        }
+    }
+    
+    /**
+     * Гарантируем существование достижения "Первая тренировка"
+     */
+    private function ensureFirstWorkoutAchievementExists() {
+        $stmt = $this->pdo->prepare("SELECT id FROM achievements WHERE code = 'first_workout'");
+        $stmt->execute();
+        if (!$stmt->fetch()) {
+            $stmt = $this->pdo->prepare("
+                INSERT INTO achievements 
+                (code, name, description, category, rarity, requirement_type, requirement_value, points, icon, is_active) 
+                VALUES 
+                ('first_workout', 'Перша тренування', 'Виконайте своє перше тренування', 'workout', 'common', 'workouts', 1, 10, 'bi-trophy', 1)
+            ");
+            $stmt->execute();
         }
     }
     
@@ -64,68 +82,44 @@ class GamificationController {
         $this->loadStats();
     }
     
-/**
- * Обработка события завершения тренировки
- */
-public function recordWorkoutCompleted($workoutId, $calories, $exercisesCompleted, $totalExercises = null) {
-    // Обновляем статистику с калориями
-    $this->updateStats($calories, $exercisesCompleted, true);
-    
-    // Проверяем специальные достижения
-    $this->checkWorkoutEventAchievements(
-        (int)$workoutId,
-        max(0, (int)$exercisesCompleted),
-        $totalExercises === null ? null : max(0, (int)$totalExercises)
-    );
-    
-    // Полная синхронизация всех достижений
-    $this->syncAchievements();
-    $this->loadStats();
-}
+    /**
+     * Обработка события завершения тренировки
+     */
+    public function recordWorkoutCompleted($workoutId, $calories, $exercisesCompleted, $totalExercises = null) {
+        // Сохраняем старую статистику для проверки первой тренировки
+        $oldTotalWorkouts = (int)($this->stats['total_workouts'] ?? 0);
+        
+        // Обновляем статистику с калориями
+        $this->updateStats($calories, $exercisesCompleted, true);
+        
+        // Проверяем специальные достижения
+        $this->checkWorkoutEventAchievements(
+            (int)$workoutId,
+            max(0, (int)$exercisesCompleted),
+            $totalExercises === null ? null : max(0, (int)$totalExercises)
+        );
+        
+        // Полная синхронизация всех достижений
+        $this->syncAchievements();
+        $this->loadStats();
+        
+        // Явная проверка: если это была первая тренировка (до обновления было 0, после стало 1)
+        if ($oldTotalWorkouts === 0 && ($this->stats['total_workouts'] ?? 0) >= 1) {
+            $this->unlockAchievement('first_workout');
+        }
+    }
 
-    private function ensureGamificationStats()
-    {
-        $stmt = $this->pdo->prepare("
-            SELECT user_id
-
-            FROM user_gamification_stats
-
-            WHERE user_id = ?
-        ");
-
-        $stmt->execute([
-            $this->userId
-        ]);
+    private function ensureGamificationStats() {
+        $stmt = $this->pdo->prepare("SELECT user_id FROM user_gamification_stats WHERE user_id = ?");
+        $stmt->execute([$this->userId]);
 
         if (!$stmt->fetch()) {
-
             $stmt = $this->pdo->prepare("
                 INSERT INTO user_gamification_stats
-
-                (
-                    user_id,
-                    total_workouts,
-                    total_calories,
-                    current_streak,
-                    max_streak,
-                    total_exercises_completed
-                )
-
-                VALUES
-
-                (
-                    ?,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0
-                )
+                (user_id, total_workouts, total_calories, current_streak, max_streak, total_exercises_completed)
+                VALUES (?, 0, 0, 0, 0, 0)
             ");
-
-            $stmt->execute([
-                $this->userId
-            ]);
+            $stmt->execute([$this->userId]);
         }
     }
 
@@ -156,7 +150,8 @@ public function recordWorkoutCompleted($workoutId, $calories, $exercisesComplete
      * Синхронизация специальных достижений
      */
     private function syncSpecialAchievements() {
-        // first_workout - первая тренировка
+        // first_workout - первая тренировка (уже обработана в recordWorkoutCompleted)
+        // но на всякий случай проверим ещё раз
         if (($this->stats['total_workouts'] ?? 0) >= 1) {
             $this->unlockAchievement('first_workout');
         }
@@ -399,50 +394,23 @@ public function recordWorkoutCompleted($workoutId, $calories, $exercisesComplete
     /**
      * Разблокировка достижения
      */
-    public function unlockAchievement($achievementCode)
-    {
+    public function unlockAchievement($achievementCode) {
         // Уже открыто
-
         $stmt = $this->pdo->prepare("
             SELECT ua.id
-
             FROM user_achievements ua
-
-            JOIN achievements a
-            ON a.id = ua.achievement_id
-
-            WHERE ua.user_id = ?
-
-            AND a.code = ?
-
-            AND ua.is_completed = 1
+            JOIN achievements a ON a.id = ua.achievement_id
+            WHERE ua.user_id = ? AND a.code = ? AND ua.is_completed = 1
         ");
-
-        $stmt->execute([
-            $this->userId,
-            $achievementCode
-        ]);
+        $stmt->execute([$this->userId, $achievementCode]);
 
         if ($stmt->fetch()) {
             return false;
         }
 
         // Получаем достижение
-
-        $stmt = $this->pdo->prepare("
-            SELECT *
-
-            FROM achievements
-
-            WHERE code = ?
-
-            AND is_active = 1
-        ");
-
-        $stmt->execute([
-            $achievementCode
-        ]);
-
+        $stmt = $this->pdo->prepare("SELECT * FROM achievements WHERE code = ? AND is_active = 1");
+        $stmt->execute([$achievementCode]);
         $achievement = $stmt->fetch();
 
         if (!$achievement) {
@@ -450,80 +418,26 @@ public function recordWorkoutCompleted($workoutId, $calories, $exercisesComplete
         }
 
         // Если запись уже существует
-
-        $stmt = $this->pdo->prepare("
-            SELECT id
-
-            FROM user_achievements
-
-            WHERE user_id = ?
-
-            AND achievement_id = ?
-        ");
-
-        $stmt->execute([
-            $this->userId,
-            $achievement['id']
-        ]);
-
+        $stmt = $this->pdo->prepare("SELECT id FROM user_achievements WHERE user_id = ? AND achievement_id = ?");
+        $stmt->execute([$this->userId, $achievement['id']]);
         $existing = $stmt->fetch();
 
         if ($existing) {
-
             $stmt = $this->pdo->prepare("
                 UPDATE user_achievements
-
-                SET
-
-                is_completed = 1,
-
-                progress = ?,
-
-                unlocked_at = NOW()
-
+                SET is_completed = 1, progress = ?, unlocked_at = NOW()
                 WHERE id = ?
             ");
-
-            $stmt->execute([
-                $achievement['requirement_value'],
-                $existing['id']
-            ]);
-
+            $stmt->execute([$achievement['requirement_value'], $existing['id']]);
         } else {
-
             $stmt = $this->pdo->prepare("
-                INSERT INTO user_achievements
-
-                (
-                    user_id,
-                    achievement_id,
-                    progress,
-                    is_completed,
-                    unlocked_at
-                )
-
-                VALUES
-
-                (
-                    ?,
-                    ?,
-                    ?,
-                    1,
-                    NOW()
-                )
+                INSERT INTO user_achievements (user_id, achievement_id, progress, is_completed, unlocked_at)
+                VALUES (?, ?, ?, 1, NOW())
             ");
-
-            $stmt->execute([
-                $this->userId,
-                $achievement['id'],
-                $achievement['requirement_value']
-            ]);
+            $stmt->execute([$this->userId, $achievement['id'], $achievement['requirement_value']]);
         }
 
-        $this->notifyAchievementUnlocked(
-            $achievement
-        );
-
+        $this->notifyAchievementUnlocked($achievement);
         return true;
     }
     

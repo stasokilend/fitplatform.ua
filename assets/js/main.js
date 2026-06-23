@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initDashboard();
     initNotifications();
     initTooltips();
+    initLazyImages();
     
     // Обработка закрытия алертов
     autoCloseAlerts();
@@ -62,4 +63,12 @@ function debounce(func, wait = 300) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+// Ленивая загрузка изображений по умолчанию для ускорения первого рендера.
+function initLazyImages() {
+    document.querySelectorAll('img:not([loading])').forEach(function(img) {
+        img.loading = 'lazy';
+        img.decoding = 'async';
+    });
 }

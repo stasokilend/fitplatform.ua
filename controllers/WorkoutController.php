@@ -247,6 +247,32 @@ class WorkoutController {
     }
     
     /**
+     * Резервный набор упражнений для шаблона без привязанных упражнений.
+     */
+    private function getFallbackTemplateExercises($difficulty, $focus) {
+        $focusGroups = [
+            'strength' => ['Ноги', 'Груди', 'Кор'],
+            'cardio' => ['Все тіло', 'Ноги', 'Кор'],
+            'functional' => ['Ноги', 'Все тіло', 'Кор'],
+            'core' => ['Кор', 'Прес'],
+            'flexibility' => ['Кор', 'Прес'],
+        ];
+        $groups = $focusGroups[$focus] ?? ['Ноги', 'Груди', 'Кор', 'Все тіло', 'Прес'];
+        $placeholders = implode(',', array_fill(0, count($groups), '?'));
+
+        $stmt = $this->pdo->prepare("
+            SELECT id as exercise_id, 3 as sets, 10 as reps, 0 as order_num
+            FROM exercises
+            WHERE is_active = 1
+              AND (difficulty = ? OR muscle_group IN ($placeholders))
+            ORDER BY FIELD(muscle_group, $placeholders), difficulty, name
+            LIMIT 5
+        ");
+        $stmt->execute(array_merge([$difficulty], $groups, $groups));
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Создание тренировки из шаблона
      */
     public function createFromTemplate($templateId, $name = null) {
@@ -273,13 +299,19 @@ class WorkoutController {
             return false;
         }
         
-        // Добавляем упражнения из шаблона
+        // Добавляем упражнения из шаблона. Если у старой базы нет строк
+        // template_exercises, берём подходящие активные упражнения, чтобы
+        // пользователь не попадал в пустую тренировку.
         $exercises = $this->getTemplateExercises($templateId);
-        foreach ($exercises as $ex) {
+        if (empty($exercises)) {
+            $exercises = $this->getFallbackTemplateExercises($template['difficulty'], $template['focus']);
+        }
+
+        foreach ($exercises as $index => $ex) {
             $this->addExercise($workoutId, $ex['exercise_id'], [
-                'sets' => $ex['sets'],
-                'reps' => $ex['reps'],
-                'order' => $ex['order_num']
+                'sets' => $ex['sets'] ?? 3,
+                'reps' => $ex['reps'] ?? 10,
+                'order' => $ex['order_num'] ?? $index
             ]);
         }
         

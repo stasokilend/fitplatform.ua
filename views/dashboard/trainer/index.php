@@ -121,7 +121,7 @@ $recentClients = array_slice($clients, 0, 5);
                             <i class="bi bi-person-plus"></i> Додати клієнта
                         </a>
                         <a href="/dashboard.php?page=messages" class="btn btn-outline-success">
-                            <i class="bi bi-chat"></i> Повідомлення
+                            <i class="bi bi-chat"></i> Чат
                             <?php if ($stats['unread_messages'] > 0): ?>
                                 <span class="badge bg-danger ms-2"><?php echo $stats['unread_messages']; ?></span>
                             <?php endif; ?>

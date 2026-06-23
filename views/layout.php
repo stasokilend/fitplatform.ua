@@ -17,7 +17,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link href="/assets/css/style.css" rel="stylesheet">
+    <link href="<?= asset('/assets/css/style.css'); ?>" rel="stylesheet">
 </head>
 <body>
     
@@ -328,15 +328,15 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- Custom JS -->
-    <script src="/assets/js/main.js"></script>
-    <script src="/assets/js/mobile.js"></script>
-    <script src="/assets/js/auth.js"></script>
-    <script src="/assets/js/dashboard.js"></script>
-    <script src="/assets/js/notifications.js"></script>
-    <script src="/assets/js/profile.js"></script>
-    <script src="/assets/js/workout.js"></script>
-    <script src="/assets/js/charts.js"></script>
-    <script src="/assets/js/gamification.js"></script>
+    <script src="<?= asset('/assets/js/main.js'); ?>"></script>
+    <script src="<?= asset('/assets/js/mobile.js'); ?>"></script>
+    <script src="<?= asset('/assets/js/auth.js'); ?>"></script>
+    <script src="<?= asset('/assets/js/dashboard.js'); ?>"></script>
+    <script src="<?= asset('/assets/js/notifications.js'); ?>"></script>
+    <script src="<?= asset('/assets/js/profile.js'); ?>"></script>
+    <script src="<?= asset('/assets/js/workout.js'); ?>"></script>
+    <script src="<?= asset('/assets/js/charts.js'); ?>"></script>
+    <script src="<?= asset('/assets/js/gamification.js'); ?>"></script>
 </body>
 <script>
 // Проверка непрочитанных сообщений

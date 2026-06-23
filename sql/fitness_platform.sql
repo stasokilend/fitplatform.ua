@@ -276,7 +276,8 @@ CREATE TABLE `notification_templates` (
 
 INSERT INTO `notification_templates` (`code`, `type`, `title`, `message`, `icon`) VALUES
 ('achievement_unlocked', 'achievement', 'Нове досягнення!', 'Ви отримали досягнення «{achievement_name}» та +{points} балів.', 'bi-trophy'),
-('workout_completed', 'success', 'Тренування завершено', 'Ви завершили «{workout_name}» і спалили {calories} ккал.', 'bi-check-circle');
+('workout_completed', 'success', 'Тренування завершено', 'Ви завершили «{workout_name}» і спалили {calories} ккал.', 'bi-check-circle'),
+('trainer_new_program', 'info', 'Нова програма від тренера', '{trainer_name} опублікував(ла) нову програму «{program_name}».', 'bi-file-earmark-plus');
 
 -- --------------------------------------------------------
 
@@ -459,6 +460,19 @@ INSERT INTO `template_exercises` (`id`, `template_id`, `exercise_id`, `sets`, `r
 (18, 7, 4, 4, 14, 30, 3.0, 2, 'Швидкий темп'),
 (19, 8, 1, 4, 15, 45, 3.0, 1, 'Акцент на ноги'),
 (20, 8, 4, 4, 12, 45, 3.0, 2, 'Стабільний темп');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `trainer_subscriptions`
+--
+
+CREATE TABLE `trainer_subscriptions` (
+  `id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `trainer_id` int NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -963,6 +977,14 @@ ALTER TABLE `trainer_notification_settings`
   ADD PRIMARY KEY (`trainer_id`);
 
 --
+-- Индексы таблицы `trainer_subscriptions`
+--
+ALTER TABLE `trainer_subscriptions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_trainer_subscription` (`user_id`,`trainer_id`),
+  ADD KEY `idx_trainer_subscriptions_trainer` (`trainer_id`);
+
+--
 -- Индексы таблицы `trainer_programs`
 --
 ALTER TABLE `trainer_programs`
@@ -1147,6 +1169,12 @@ ALTER TABLE `template_exercises`
   MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT для таблицы `trainer_subscriptions`
+--
+ALTER TABLE `trainer_subscriptions`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT для таблицы `trainer_programs`
 --
 ALTER TABLE `trainer_programs`
@@ -1284,6 +1312,13 @@ ALTER TABLE `trainer_clients`
 --
 ALTER TABLE `trainer_notification_settings`
   ADD CONSTRAINT `trainer_notification_settings_ibfk_1` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Ограничения внешнего ключа таблицы `trainer_subscriptions`
+--
+ALTER TABLE `trainer_subscriptions`
+  ADD CONSTRAINT `trainer_subscriptions_trainer_fk` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `trainer_subscriptions_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
 -- Ограничения внешнего ключа таблицы `trainer_programs`

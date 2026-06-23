@@ -3,21 +3,37 @@ require_once 'config/database.php';
 
 $userId = $_SESSION['user_id'];
 
+$pdo->exec("
+    CREATE TABLE IF NOT EXISTS trainer_subscriptions (
+        id INT NOT NULL AUTO_INCREMENT,
+        user_id INT NOT NULL,
+        trainer_id INT NOT NULL,
+        created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uniq_trainer_subscription (user_id, trainer_id),
+        KEY idx_trainer_subscriptions_trainer (trainer_id),
+        CONSTRAINT trainer_subscriptions_user_fk FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+        CONSTRAINT trainer_subscriptions_trainer_fk FOREIGN KEY (trainer_id) REFERENCES users (id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+");
+
 // Получаем публичные программы всех тренеров
 $stmt = $pdo->prepare("
     SELECT tp.*, u.full_name as trainer_name, u.id as trainer_id,
-           (SELECT COUNT(*) FROM program_exercises WHERE program_id = tp.id) as exercises_count
+           (SELECT COUNT(*) FROM program_exercises WHERE program_id = tp.id) as exercises_count,
+           ts.id as subscription_id
     FROM trainer_programs tp
     JOIN users u ON tp.trainer_id = u.id
+    LEFT JOIN trainer_subscriptions ts ON ts.trainer_id = tp.trainer_id AND ts.user_id = ?
     WHERE tp.is_public = 1 AND tp.is_active = 1
     ORDER BY tp.created_at DESC
 ");
-$stmt->execute();
+$stmt->execute([$userId]);
 $programs = $stmt->fetchAll();
 
 // Получаем программы, назначенные пользователю
 $stmt = $pdo->prepare("
-    SELECT cp.*, tp.name as program_name, tp.description, tp.difficulty, 
+    SELECT cp.*, tp.name as program_name, tp.description, tp.difficulty,
            tp.duration_weeks, tp.sessions_per_week, u.full_name as trainer_name
     FROM client_programs cp
     JOIN trainer_programs tp ON cp.program_id = tp.id
@@ -85,7 +101,7 @@ $difficultyColors = [
                                 </div>
                             </div>
                             <div class="card-footer bg-transparent border-0">
-                                <a href="/dashboard.php?page=trainer-program-detail&id=<?php echo $program['program_id']; ?>" 
+                                <a href="/dashboard.php?page=trainer-program-detail&id=<?php echo $program['program_id']; ?>"
                                    class="btn btn-sm btn-primary w-100">
                                     <i class="bi bi-eye"></i> Переглянути
                                 </a>
@@ -135,10 +151,21 @@ $difficultyColors = [
                             </div>
                         </div>
                         <div class="card-footer bg-transparent border-0">
-                            <a href="/dashboard.php?page=trainer-program-detail&id=<?php echo $program['id']; ?>" 
-                               class="btn btn-sm btn-outline-primary w-100">
-                                <i class="bi bi-eye"></i> Переглянути
-                            </a>
+                            <div class="d-grid gap-2">
+                                <a href="/dashboard.php?page=trainer-program-detail&id=<?php echo $program['id']; ?>"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Переглянути
+                                </a>
+                                <?php if ($program['trainer_id'] != $userId): ?>
+                                    <button type="button"
+                                            class="btn btn-sm <?php echo $program['subscription_id'] ? 'btn-success' : 'btn-outline-success'; ?> subscribe-trainer-btn"
+                                            data-trainer-id="<?php echo $program['trainer_id']; ?>"
+                                            <?php echo $program['subscription_id'] ? 'disabled' : ''; ?>>
+                                        <i class="bi <?php echo $program['subscription_id'] ? 'bi-check-circle' : 'bi-bell'; ?>"></i>
+                                        <?php echo $program['subscription_id'] ? 'Ви підписані' : 'Підписатися на тренера'; ?>
+                                    </button>
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -152,3 +179,44 @@ $difficultyColors = [
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+document.querySelectorAll('.subscribe-trainer-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+        const trainerId = button.dataset.trainerId;
+        const formData = new FormData();
+        formData.append('action', 'subscribe_trainer');
+        formData.append('trainer_id', trainerId);
+
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Підписка...';
+
+        fetch('/api/trainer.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    document.querySelectorAll(`.subscribe-trainer-btn[data-trainer-id="${trainerId}"]`).forEach((trainerButton) => {
+                        trainerButton.className = 'btn btn-sm btn-success subscribe-trainer-btn';
+                        trainerButton.innerHTML = '<i class="bi bi-check-circle"></i> Ви підписані';
+                        trainerButton.disabled = true;
+                    });
+                    showToast('Ви підписалися на тренера. Нові програми будуть приходити в повідомлення.', 'success');
+                } else {
+                    button.disabled = false;
+                    button.className = 'btn btn-sm btn-outline-success subscribe-trainer-btn';
+                    button.innerHTML = '<i class="bi bi-bell"></i> Підписатися на тренера';
+                    showToast(data.error || 'Не вдалося оформити підписку', 'danger');
+                }
+            })
+            .catch(() => {
+                button.disabled = false;
+                button.className = 'btn btn-sm btn-outline-success subscribe-trainer-btn';
+                button.innerHTML = '<i class="bi bi-bell"></i> Підписатися на тренера';
+                showToast('Помилка з’єднання', 'danger');
+            });
+    });
+});
+</script>

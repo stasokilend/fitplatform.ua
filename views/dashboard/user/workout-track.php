@@ -772,7 +772,12 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 showToast('🎉 Тренування завершено!', 'success');
@@ -786,9 +791,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .catch(function() {
-            showToast('Помилка з\'єднання', 'danger');
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-check-circle"></i> Завершити тренування';
+            showToast('Тренування могло бути завершено. Перевіряємо статус...', 'warning');
+            setTimeout(() => {
+                window.location.href = '/dashboard.php?page=workout-detail&id=' + currentWorkoutId;
+            }, 900);
         });
     });
 

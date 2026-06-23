@@ -388,6 +388,32 @@ CREATE TABLE `template_exercises` (
   `notes` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+--
+-- Дамп данных таблицы `template_exercises`
+--
+
+INSERT INTO `template_exercises` (`id`, `template_id`, `exercise_id`, `sets`, `reps`, `rest_seconds`, `duration_min`, `order_num`, `notes`) VALUES
+(1, 1, 1, 3, 12, 60, 3.0, 1, 'Контролюйте техніку присідання'),
+(2, 1, 2, 3, 10, 60, 2.0, 2, 'Виконуйте з колін за потреби'),
+(3, 1, 3, 3, 1, 45, 1.0, 3, 'Утримуйте планку 30-60 секунд'),
+(4, 2, 5, 4, 8, 45, 1.0, 1, 'Працюйте у комфортному темпі'),
+(5, 2, 4, 3, 12, 45, 3.0, 2, 'Чергуйте ноги'),
+(6, 2, 3, 3, 1, 30, 1.0, 3, 'Активне відновлення'),
+(7, 3, 1, 3, 15, 45, 3.0, 1, 'Повний діапазон руху'),
+(8, 3, 4, 3, 12, 45, 3.0, 2, 'Тримайте корпус рівно'),
+(9, 3, 5, 3, 8, 60, 1.0, 3, 'Зменшуйте темп за потреби'),
+(10, 4, 3, 4, 1, 45, 1.0, 1, 'Планка 30-60 секунд'),
+(11, 4, 6, 4, 15, 45, 2.0, 2, 'Не тягніть шию руками'),
+(12, 5, 1, 4, 15, 60, 3.0, 1, 'Додайте вагу за можливості'),
+(13, 5, 2, 4, 12, 60, 2.0, 2, 'Контрольована амплітуда'),
+(14, 5, 5, 4, 10, 60, 1.0, 3, 'Висока інтенсивність'),
+(15, 6, 3, 3, 1, 45, 1.0, 1, 'Спокійне дихання'),
+(16, 6, 6, 3, 12, 45, 2.0, 2, 'М\'яка активація кора'),
+(17, 7, 5, 5, 10, 30, 1.0, 1, 'Інтервали високої інтенсивності'),
+(18, 7, 4, 4, 14, 30, 3.0, 2, 'Швидкий темп'),
+(19, 8, 1, 4, 15, 45, 3.0, 1, 'Акцент на ноги'),
+(20, 8, 4, 4, 12, 45, 3.0, 2, 'Стабільний темп');
+
 -- --------------------------------------------------------
 
 --
@@ -795,7 +821,8 @@ ALTER TABLE `chats`
 ALTER TABLE `chat_messages`
   ADD PRIMARY KEY (`id`),
   ADD KEY `chat_id` (`chat_id`),
-  ADD KEY `sender_id` (`sender_id`);
+  ADD KEY `sender_id` (`sender_id`),
+  ADD KEY `idx_chat_created` (`chat_id`,`created_at`);
 
 --
 -- Индексы таблицы `client_programs`
@@ -810,7 +837,9 @@ ALTER TABLE `client_programs`
 -- Индексы таблицы `exercises`
 --
 ALTER TABLE `exercises`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_active_difficulty` (`is_active`,`difficulty`),
+  ADD KEY `idx_muscle_group` (`muscle_group`);
 
 --
 -- Индексы таблицы `google_fit_sync_log`
@@ -871,7 +900,8 @@ ALTER TABLE `program_media`
 ALTER TABLE `template_exercises`
   ADD PRIMARY KEY (`id`),
   ADD KEY `exercise_id` (`exercise_id`),
-  ADD KEY `idx_template` (`template_id`);
+  ADD KEY `idx_template` (`template_id`),
+  ADD KEY `idx_template_order` (`template_id`,`order_num`);
 
 --
 -- Индексы таблицы `trainer_clients`

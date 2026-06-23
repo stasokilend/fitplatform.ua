@@ -436,7 +436,8 @@ $pageTitle = 'Заповнення профілю';
                     </select>
                 </div>
             </div>
-            <div class="d-flex justify-content-end mt-4">
+            <div class="d-flex justify-content-between mt-4">
+                <button type="button" class="btn btn-outline-secondary-custom" disabled><i class="bi bi-arrow-left me-2"></i> Назад</button>
                 <button type="button" class="btn btn-primary-gradient" onclick="nextStep()">Далі <i class="bi bi-arrow-right ms-2"></i></button>
             </div>
         </div>
@@ -497,6 +498,12 @@ $pageTitle = 'Заповнення профілю';
     </div>
 </div>
 <input type="hidden" name="goal_weights" id="goalWeightsInput" value='{"weight_loss":0,"muscle_gain":0,"endurance":0,"health":0}'>
+<input type="hidden" name="goal_type" id="goalType" value="<?php echo htmlspecialchars($profile['goal_type'] ?? 'health'); ?>">
+            <div class="d-flex justify-content-between mt-4">
+                <button type="button" class="btn btn-outline-secondary-custom" onclick="prevStep()"><i class="bi bi-arrow-left me-2"></i> Назад</button>
+                <button type="button" class="btn btn-primary-gradient" onclick="nextStep()">Далі <i class="bi bi-arrow-right ms-2"></i></button>
+            </div>
+        </div>
 
         <!-- Step 2.5: Role Selection -->
         <div class="form-section" data-section="2_5">
@@ -575,7 +582,10 @@ $pageTitle = 'Заповнення профілю';
                     <div class="col-auto"><div class="bg-light p-3 rounded-3"><div class="small text-muted">Мета</div><div class="fw-bold" id="summaryGoal">-</div></div></div>
                     <div class="col-auto"><div class="bg-light p-3 rounded-3"><div class="small text-muted">Роль</div><div class="fw-bold" id="summaryRole">-</div></div></div>
                 </div>
-                <button type="submit" class="btn btn-primary-gradient btn-lg px-5"><i class="bi bi-rocket-fill me-2"></i> Розпочати тренування!</button>
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <button type="button" class="btn btn-outline-secondary-custom" onclick="prevStep()"><i class="bi bi-arrow-left me-2"></i> Назад</button>
+                    <button type="submit" class="btn btn-primary-gradient btn-lg px-5"><i class="bi bi-rocket-fill me-2"></i> Розпочати тренування!</button>
+                </div>
             </div>
         </div>
     </form>
@@ -595,7 +605,7 @@ document.addEventListener('DOMContentLoaded', function() {
         card.addEventListener('click', function() {
             goalCards.forEach(c => c.classList.remove('selected'));
             this.classList.add('selected');
-            goalInput.value = this.dataset.goal;
+            if (goalInput) goalInput.value = this.dataset.goal;
         });
     });
 
@@ -676,7 +686,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const weight = document.querySelector('input[name="weight"]')?.value || '-';
         const height = document.querySelector('input[name="height"]')?.value || '-';
         const goalMap = { 'weight_loss': 'Зниження ваги', 'muscle_gain': 'Набір маси', 'endurance': 'Витривалість', 'health': 'Здоров\'я' };
-        const goal = goalMap[document.getElementById('goalType').value] || '-';
+        const goalInput = document.getElementById('goalType');
+        const goal = goalMap[goalInput?.value] || '-';
         const roleMap = { 'user': '💪 Користувач', 'trainer': '🏋️ Тренер' };
         const role = roleMap[document.getElementById('roleType').value] || '💪 Користувач';
         document.getElementById('summaryAge').textContent = age + ' років';
@@ -739,6 +750,12 @@ function updateGoalWeights() {
         health: parseInt(document.getElementById('goal_health').value) / 100
     };
     document.getElementById('goalWeightsInput').value = JSON.stringify(weights);
+
+    const topGoal = Object.entries(weights).sort((a, b) => b[1] - a[1])[0];
+    const goalInput = document.getElementById('goalType');
+    if (goalInput && topGoal && topGoal[1] > 0) {
+        goalInput.value = topGoal[0];
+    }
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

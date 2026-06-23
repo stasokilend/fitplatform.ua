@@ -543,6 +543,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Ошибка:', error);
                 showToast('Помилка з\'єднання', 'danger');
             });
+
+            updateCalories();
         });
     });
 
@@ -845,14 +847,6 @@ function updateCalories() {
     })
     .catch(error => console.error('Ошибка:', error));
 }
-
-// Вызываем при каждом переключении упражнения
-document.querySelectorAll('.exercise-item').forEach(function(item) {
-    item.addEventListener('click', function() {
-        // ... существующий код ...
-        updateCalories();
-    });
-});
 });
 </script>
 

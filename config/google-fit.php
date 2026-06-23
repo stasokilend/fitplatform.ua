@@ -1,8 +1,7 @@
 <?php
-// Google Fit API settings are defined directly here so the integration does not
-// depend on loading values from .env at runtime.
+
 define('GOOGLE_FIT_CLIENT_ID', '1097198779936-5lsqnde1ge5dvohie2eavj6irl461pbd.apps.googleusercontent.com');
-define('GOOGLE_FIT_CLIENT_SECRET', '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');
+define('GOOGLE_FIT_CLIENT_SECRET', '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');
 define('GOOGLE_FIT_REDIRECT_URI', 'http://127.0.1.31/google-fit-callback.php');
 
 define('GOOGLE_FIT_SCOPES', implode(' ', [

@@ -35,7 +35,7 @@ if ($action === 'recent') {
     exit;
 }
 
-// --- СИНХРОНИЗАЦИЯ ДОСТИЖЕНИЙ БЕЗ ПОВТОРНОГО НАЧИСЛЕНИЯ СТАТИСТИКИ ---
+// --- СИНХРОНИЗАЦИЯ ВСЕХ ДОСТИЖЕНИЙ (ПОЛНАЯ) ---
 if ($action === 'sync') {
     $gamification->syncAchievements();
     echo json_encode([
@@ -57,7 +57,7 @@ if ($action === 'update_workout') {
     exit;
 }
 
-// --- РАЗБЛОКИРОВКА ДОСТИЖЕНИЯ ---
+// --- РАЗБЛОКИРОВКА ДОСТИЖЕНИЯ (ВРУЧНУЮ) ---
 if ($action === 'unlock') {
     $achievementCode = $_POST['code'] ?? '';
     
@@ -69,7 +69,7 @@ if ($action === 'unlock') {
     $result = $gamification->unlockAchievement($achievementCode);
     
     if ($result) {
-        // Получаем детали достижения. Уведомление создается внутри GamificationController.
+        global $pdo;
         $stmt = $pdo->prepare("SELECT * FROM achievements WHERE code = ?");
         $stmt->execute([$achievementCode]);
         $achievement = $stmt->fetch();
@@ -79,10 +79,9 @@ if ($action === 'unlock') {
             'achievement' => $achievement
         ]);
     } else {
-        echo json_encode(['success' => false, 'error' => 'Помилка розблокування']);
+        echo json_encode(['success' => false, 'error' => 'Помилка розблокування або вже отримано']);
     }
     exit;
 }
 
 echo json_encode(['success' => false, 'error' => 'Невідома дія']);
-?>

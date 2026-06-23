@@ -103,7 +103,7 @@ if ($action === 'toggle_exercise') {
     exit;
 }
 
-// --- ЗАВЕРШЕНИЕ ТРЕНИРОВКИ ---
+// --- ЗАВЕРШЕНИЕ ТРЕНИРОВКИ (ОБНОВЛЕНО) ---
 if ($action === 'complete') {
     $workoutId = (int)($_POST['workout_id'] ?? 0);
     if (!$workoutId) {
@@ -132,7 +132,11 @@ if ($action === 'complete') {
             $calories = (int)round($calories);
         }
         
+        // Записываем завершение тренировки в геймификацию
         $gamification->recordWorkoutCompleted($workoutId, $calories, $completed, count($exercises));
+        
+        // ПОЛНАЯ СИНХРОНИЗАЦИЯ ВСЕХ ДОСТИЖЕНИЙ
+        $gamification->syncAchievements();
         
         // Создаем уведомление
         require_once __DIR__ . '/../controllers/NotificationController.php';
@@ -147,7 +151,6 @@ if ($action === 'complete') {
     echo json_encode(['success' => $success]);
     exit;
 }
-
 
 // --- УДАЛЕНИЕ ТРЕНИРОВКИ ---
 if ($action === 'delete') {
@@ -216,4 +219,3 @@ if ($action === 'stats') {
 }
 
 echo json_encode(['success' => false, 'error' => 'Невідома дія']);
-?>

@@ -138,9 +138,10 @@ class WorkoutController {
         $stmt = $this->pdo->prepare("
             UPDATE workout_plans 
             SET status = 'completed', completed_at = NOW()
-            WHERE id = ? AND user_id = ?
+            WHERE id = ? AND user_id = ? AND status <> 'completed'
         ");
-        return $stmt->execute([$workoutId, $this->userId]);
+        $stmt->execute([$workoutId, $this->userId]);
+        return $stmt->rowCount() > 0;
     }
     
 

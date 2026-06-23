@@ -22,9 +22,10 @@ if ($action === 'complete') {
     }
     
     // Проверяем, что план принадлежит пользователю
-    $stmt = $pdo->prepare("SELECT id FROM workout_plans WHERE id = ? AND user_id = ?");
+    $stmt = $pdo->prepare("SELECT id, status FROM workout_plans WHERE id = ? AND user_id = ?");
     $stmt->execute([$planId, $userId]);
-    if (!$stmt->fetch()) {
+    $plan = $stmt->fetch();
+    if (!$plan) {
         echo json_encode(['success' => false, 'error' => 'Доступ заборонено']);
         exit;
     }
@@ -60,10 +61,11 @@ if ($action === 'finish') {
     // Обновляем статус плана
     $stmt = $pdo->prepare("
         UPDATE workout_plans 
-        SET status = 'completed' 
-        WHERE id = ?
+        SET status = 'completed', completed_at = NOW()
+        WHERE id = ? AND status <> 'completed'
     ");
-    $success = $stmt->execute([$planId]);
+    $stmt->execute([$planId]);
+    $success = $stmt->rowCount() > 0;
     
     // Добавляем лог
     if ($success) {
@@ -80,6 +82,7 @@ if ($action === 'finish') {
         
         $stmt = $pdo->prepare("
             SELECT 
+                COUNT(pe.id) as total,
                 COUNT(CASE WHEN pe.is_completed = 1 THEN 1 END) as completed,
                 SUM(CASE WHEN pe.is_completed = 1 THEN COALESCE(e.calories_per_min, 0) * COALESCE(e.duration_min, 0) ELSE 0 END) as calories
             FROM plan_exercises pe
@@ -90,10 +93,11 @@ if ($action === 'finish') {
         $data = $stmt->fetch();
         
         $gamification = new GamificationController($userId);
-        $gamification->updateStats(
+        $gamification->recordWorkoutCompleted(
+            $planId,
             (int)round($data['calories'] ?? 0),
             (int)($data['completed'] ?? 0),
-            true
+            (int)($data['total'] ?? 0)
         );
     }
 

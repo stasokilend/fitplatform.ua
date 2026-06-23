@@ -11,14 +11,19 @@ if (!isLoggedIn()) {
 
 $userId = $_SESSION['user_id'];
 $notification = new NotificationController($userId);
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
+$jsonInput = json_decode(file_get_contents('php://input'), true);
+if (!is_array($jsonInput)) {
+    $jsonInput = [];
+}
+
+$action = $_POST['action'] ?? $jsonInput['action'] ?? $_GET['action'] ?? '';
 
 // --- ПОЛУЧЕНИЕ УВЕДОМЛЕНИЙ ---
 if ($action === 'get' || !$action) {
     $limit = (int)($_GET['limit'] ?? 20);
     $offset = (int)($_GET['offset'] ?? 0);
-    $notifications = $notification->getApiNotifications($limit, $offset);
-    $unreadCount = $notification->getUnreadCount();
+    $notifications = $notification->getNotificationFeed($limit, $offset);
+    $unreadCount = $notification->getFeedUnreadCount();
     
     echo json_encode([
         'success' => true,
@@ -33,14 +38,14 @@ if ($action === 'get' || !$action) {
 
 // --- ПОЛУЧЕНИЕ КОЛИЧЕСТВА НЕПРОЧИТАННЫХ ---
 if ($action === 'count') {
-    $count = $notification->getUnreadCount();
+    $count = $notification->getFeedUnreadCount();
     echo json_encode(['success' => true, 'count' => $count]);
     exit;
 }
 
 // --- ОТМЕТИТЬ КАК ПРОЧИТАННОЕ ---
 if ($action === 'read') {
-    $id = (int)($_POST['id'] ?? 0);
+    $id = (int)($_POST['id'] ?? $jsonInput['id'] ?? 0);
     if (!$id) {
         echo json_encode(['success' => false, 'error' => 'ID не вказано']);
         exit;
@@ -60,7 +65,7 @@ if ($action === 'read_all') {
 
 // --- УДАЛИТЬ УВЕДОМЛЕНИЕ ---
 if ($action === 'delete') {
-    $id = (int)($_POST['id'] ?? 0);
+    $id = (int)($_POST['id'] ?? $jsonInput['id'] ?? 0);
     if (!$id) {
         echo json_encode(['success' => false, 'error' => 'ID не вказано']);
         exit;

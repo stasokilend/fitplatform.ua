@@ -1086,7 +1086,7 @@ body {
 }
 
 /* ---------- Адаптивность ---------- */
-@media (max-width: 991px) {
+@media (max-width: 1280px) {
     /* Скрываем десктопный сайдбар */
     .desktop-sidebar {
         display: none !important;
@@ -1283,7 +1283,7 @@ body {
 }
 
 /* Показываем мобильный хедер только на телефонах */
-@media (max-width: 768px) {
+@media (max-width: 1280px) {
     .mobile-header {
         display: flex !important;
     }

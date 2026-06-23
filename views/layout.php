@@ -51,10 +51,6 @@
             <a class="navbar-brand" href="/">
                 <i class="bi bi-heart-pulse-fill"></i> FitPlatform
             </a>
-            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto align-items-lg-center">
                     <?php if (!isset($_SESSION['user_id'])): ?>

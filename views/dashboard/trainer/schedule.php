@@ -42,7 +42,7 @@ $statusColors = [
             <i class="bi bi-calendar text-primary"></i> Розклад
         </h1>
         <div>
-            <button class="btn btn-primary btn-gradient" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
+            <button class="btn btn-primary btn-gradient" id="openAddScheduleBtn" data-bs-toggle="modal" data-bs-target="#addScheduleModal">
                 <i class="bi bi-plus-circle"></i> Додати заняття
             </button>
         </div>
@@ -98,9 +98,10 @@ $statusColors = [
                             <?php foreach ($days as $day): 
                                 $found = false;
                                 $events = $scheduleByDay[$day] ?? [];
+                                $cellDate = date('Y-m-d', strtotime($weekStart . ' +' . array_search($day, $days) . ' days'));
                             ?>
                                 <td style="height: 50px; cursor: pointer;" 
-                                    onclick="quickAddEvent('<?php echo $day; ?>', '<?php echo $timeSlot; ?>')">
+                                    onclick="quickAddEvent('<?php echo $day; ?>', '<?php echo $timeSlot; ?>', '<?php echo $cellDate; ?>')">
                                     <?php foreach ($events as $event): 
                                         $eventHour = date('H', strtotime($event['start_time']));
                                         if ($eventHour == $hour): 
@@ -113,10 +114,10 @@ $statusColors = [
                                              data-start-time="<?php echo htmlspecialchars(substr($event['start_time'], 0, 5)); ?>"
                                              data-end-time="<?php echo htmlspecialchars(substr($event['end_time'], 0, 5)); ?>"
                                              data-status="<?php echo htmlspecialchars($event['status']); ?>"
-                                             data-date="<?php echo htmlspecialchars($event['date'] ?? ''); ?>"
+                                             data-date="<?php echo htmlspecialchars($event['date'] ?: $cellDate); ?>"
                                              data-notes="<?php echo htmlspecialchars($event['notes'] ?? '', ENT_QUOTES); ?>"
                                              style="cursor: pointer;"
-                                             onclick="showScheduleContextMenu(event, <?php echo (int)$event['id']; ?>, '<?php echo $day; ?>', '<?php echo $timeSlot; ?>')">
+                                             onclick="showScheduleContextMenu(event, <?php echo (int)$event['id']; ?>, '<?php echo $day; ?>', '<?php echo $timeSlot; ?>', '<?php echo $cellDate; ?>')">
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <span>
                                                     <i class="bi bi-person"></i>
@@ -224,9 +225,9 @@ $statusColors = [
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Дата (опціонально)</label>
-                            <input type="date" id="scheduleDate" class="form-control">
-                            <small class="text-muted">Залиште порожнім для повторюваного заняття</small>
+                            <label class="form-label fw-semibold">Дата</label>
+                            <input type="date" id="scheduleDate" class="form-control" required>
+                            <small class="text-muted">Заповнюється автоматично з вибраного дня розкладу</small>
                         </div>
                         <div class="col-12">
                             <label class="form-label fw-semibold">Нотатки</label>
@@ -235,6 +236,9 @@ $statusColors = [
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-danger me-auto d-none" id="deleteScheduleFromFormBtn">
+                        <i class="bi bi-trash"></i> Видалити
+                    </button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
                     <button type="submit" class="btn btn-primary" id="saveScheduleBtn">
                         <i class="bi bi-save"></i> Додати
@@ -273,6 +277,23 @@ $statusColors = [
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const weekStartDate = new Date('<?php echo date('Y-m-d', strtotime($weekStart)); ?>T00:00:00');
+    const dayIndexes = {
+        monday: 0,
+        tuesday: 1,
+        wednesday: 2,
+        thursday: 3,
+        friday: 4,
+        saturday: 5,
+        sunday: 6
+    };
+
+    function getDateForDay(day) {
+        const date = new Date(weekStartDate);
+        date.setDate(date.getDate() + (dayIndexes[day] || 0));
+        return date.toISOString().slice(0, 10);
+    }
+
     // ===== ДОБАВЛЕНИЕ ЗАНЯТИЯ =====
     document.getElementById('scheduleForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -288,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('start_time', document.getElementById('scheduleStartTime').value);
         formData.append('end_time', document.getElementById('scheduleEndTime').value);
         formData.append('status', document.getElementById('scheduleStatus').value);
-        formData.append('date', document.getElementById('scheduleDate').value || '');
+        formData.append('date', document.getElementById('scheduleDate').value);
         formData.append('notes', document.getElementById('scheduleNotes').value);
         
         const btn = this.querySelector('button[type="submit"]');
@@ -305,21 +326,28 @@ document.addEventListener('DOMContentLoaded', function() {
             btn.innerHTML = document.getElementById('scheduleAction').value === 'edit' ? '<i class="bi bi-save"></i> Зберегти' : '<i class="bi bi-save"></i> Додати';
             
             if (data.success) {
-                showToast(document.getElementById('scheduleAction').value === 'edit' ? 'Заняття оновлено!' : 'Заняття додано!', 'success');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addScheduleModal'));
-                modal.hide();
-                setTimeout(() => location.reload(), 1000);
+                location.reload();
             } else {
                 showToast(data.error || 'Помилка додавання', 'danger');
             }
         })
         .catch(function() {
-            btn.disabled = false;
-            btn.innerHTML = document.getElementById('scheduleAction').value === 'edit' ? '<i class="bi bi-save"></i> Зберегти' : '<i class="bi bi-save"></i> Додати';
-            showToast('Помилка з\'єднання', 'danger');
+            location.reload();
         });
     });
     
+    const addScheduleModalElement = document.getElementById('addScheduleModal');
+    addScheduleModalElement.addEventListener('show.bs.modal', function() {
+        if (document.getElementById('scheduleAction').value !== 'add') return;
+        if (!document.getElementById('scheduleDate').value) {
+            document.getElementById('scheduleDate').value = new Date().toISOString().slice(0, 10);
+        }
+    });
+
+    document.getElementById('scheduleDay').addEventListener('change', function() {
+        document.getElementById('scheduleDate').value = getDateForDay(this.value);
+    });
+
     // ===== БЫСТРОЕ ДОБАВЛЕНИЕ ИЗ КАЛЕНДАРЯ =====
     function resetScheduleForm(mode = 'add') {
         document.getElementById('scheduleForm').reset();
@@ -330,14 +358,21 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('saveScheduleBtn').innerHTML = mode === 'edit'
             ? '<i class="bi bi-save"></i> Зберегти'
             : '<i class="bi bi-save"></i> Додати';
+        document.getElementById('deleteScheduleFromFormBtn').classList.toggle('d-none', mode !== 'edit');
     }
 
-    window.quickAddEvent = function(day, time) {
+    document.getElementById('openAddScheduleBtn').addEventListener('click', function() {
+        resetScheduleForm('add');
+        document.getElementById('scheduleDate').value = new Date().toISOString().slice(0, 10);
+    });
+
+    window.quickAddEvent = function(day, time, date = null) {
         hideScheduleContextMenu();
         resetScheduleForm('add');
         const modal = new bootstrap.Modal(document.getElementById('addScheduleModal'));
         document.getElementById('scheduleDay').value = day;
         document.getElementById('scheduleStartTime').value = time;
+        document.getElementById('scheduleDate').value = date || getDateForDay(day);
         // Устанавливаем время окончания +1 час
         const endHour = parseInt(time) + 1;
         document.getElementById('scheduleEndTime').value = String(endHour).padStart(2, '0') + ':00';
@@ -354,10 +389,10 @@ document.addEventListener('DOMContentLoaded', function() {
         contextMenu.style.display = 'none';
     }
 
-    window.showScheduleContextMenu = function(clickEvent, eventId, day, time) {
+    window.showScheduleContextMenu = function(clickEvent, eventId, day, time, date) {
         clickEvent.stopPropagation();
         currentEventId = eventId;
-        currentContext = { eventId, day, time };
+        currentContext = { eventId, day, time, date };
 
         contextMenu.style.display = 'block';
         contextMenu.setAttribute('aria-hidden', 'false');
@@ -370,7 +405,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('contextAddScheduleBtn').addEventListener('click', function(e) {
         e.stopPropagation();
         if (!currentContext) return;
-        quickAddEvent(currentContext.day, currentContext.time);
+        quickAddEvent(currentContext.day, currentContext.time, currentContext.date);
     });
 
     document.getElementById('contextEditScheduleBtn').addEventListener('click', function(e) {
@@ -387,7 +422,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('scheduleStartTime').value = eventElement.dataset.startTime || '09:00';
         document.getElementById('scheduleEndTime').value = eventElement.dataset.endTime || '10:00';
         document.getElementById('scheduleStatus').value = eventElement.dataset.status || 'booked';
-        document.getElementById('scheduleDate').value = eventElement.dataset.date || '';
+        document.getElementById('scheduleDate').value = eventElement.dataset.date || getDateForDay(eventElement.dataset.day);
         document.getElementById('scheduleNotes').value = eventElement.dataset.notes || '';
 
         const modal = new bootstrap.Modal(document.getElementById('addScheduleModal'));
@@ -426,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // ===== УДАЛЕНИЕ ЗАНЯТИЯ =====
-    document.getElementById('deleteScheduleBtn').addEventListener('click', function() {
+    function deleteCurrentSchedule() {
         if (!currentEventId) return;
         if (!confirm('Видалити це заняття?')) return;
         
@@ -441,18 +476,18 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                showToast('Заняття видалено', 'success');
-                const modal = bootstrap.Modal.getInstance(document.getElementById('viewScheduleModal'));
-                modal.hide();
-                setTimeout(() => location.reload(), 1000);
+                location.reload();
             } else {
                 showToast(data.error || 'Помилка видалення', 'danger');
             }
         })
         .catch(function() {
-            showToast('Помилка з\'єднання', 'danger');
+            location.reload();
         });
-    });
+    }
+
+    document.getElementById('deleteScheduleBtn').addEventListener('click', deleteCurrentSchedule);
+    document.getElementById('deleteScheduleFromFormBtn').addEventListener('click', deleteCurrentSchedule);
 });
 </script>
 

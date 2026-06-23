@@ -148,6 +148,134 @@ class NotificationController {
         $stmt->execute([$this->userId, $limit, $offset]);
         return $stmt->fetchAll();
     }
+
+    /**
+     * Получение единой ленты уведомлений: системные события + непрочитанные сообщения чата.
+     */
+    public function getNotificationFeed($limit = 20, $offset = 0) {
+        $notifications = $this->getApiNotifications($limit, $offset);
+        $feed = [];
+
+        foreach ($notifications as $item) {
+            $type = $this->normalizeType($item);
+            $item['kind'] = 'notification';
+            $item['feed_id'] = 'notification-' . $item['id'];
+            $item['type'] = $type;
+            $item['meta'] = $this->getTypeLabel($type);
+            $feed[] = $item;
+        }
+
+        if ($offset === 0) {
+            foreach ($this->getUnreadChatNotifications() as $chatItem) {
+                $feed[] = $chatItem;
+            }
+        }
+
+        usort($feed, function ($a, $b) {
+            return strtotime($b['created_at']) <=> strtotime($a['created_at']);
+        });
+
+        return array_slice($feed, 0, $limit);
+    }
+
+    /**
+     * Количество непрочитанных элементов в объединенной ленте.
+     */
+    public function getFeedUnreadCount() {
+        $chatCount = 0;
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) as total
+            FROM chat_messages cm
+            JOIN chats c ON cm.chat_id = c.id
+            WHERE (c.user1_id = ? OR c.user2_id = ?)
+              AND cm.sender_id != ?
+              AND cm.is_read = 0
+        ");
+        $stmt->execute([$this->userId, $this->userId, $this->userId]);
+        $chatCount = (int)($stmt->fetch()['total'] ?? 0);
+
+        return $this->getUnreadCount() + $chatCount;
+    }
+
+    private function getUnreadChatNotifications() {
+        $stmt = $this->pdo->prepare("
+            SELECT
+                cm.id,
+                cm.chat_id,
+                cm.message,
+                cm.created_at,
+                u.full_name as sender_name
+            FROM chat_messages cm
+            JOIN chats c ON cm.chat_id = c.id
+            JOIN users u ON cm.sender_id = u.id
+            JOIN (
+                SELECT MAX(cm2.id) as latest_id
+                FROM chat_messages cm2
+                JOIN chats c2 ON cm2.chat_id = c2.id
+                WHERE (c2.user1_id = ? OR c2.user2_id = ?)
+                  AND cm2.sender_id != ?
+                  AND cm2.is_read = 0
+                GROUP BY cm2.chat_id
+            ) latest ON latest.latest_id = cm.id
+            WHERE (c.user1_id = ? OR c.user2_id = ?)
+            ORDER BY cm.created_at DESC
+            LIMIT 5
+        ");
+        $stmt->execute([$this->userId, $this->userId, $this->userId, $this->userId, $this->userId]);
+
+        return array_map(function ($message) {
+            return [
+                'id' => $message['id'],
+                'kind' => 'chat',
+                'feed_id' => 'chat-' . $message['id'],
+                'type' => 'message',
+                'title' => 'Нове повідомлення від ' . $message['sender_name'],
+                'message' => $this->shorten($message['message'], 120),
+                'icon' => 'bi-chat-dots-fill',
+                'link' => '/dashboard.php?page=chat&chat_id=' . (int)$message['chat_id'],
+                'is_read' => 0,
+                'created_at' => $message['created_at'],
+                'meta' => 'Повідомлення з чату'
+            ];
+        }, $stmt->fetchAll());
+    }
+
+    private function normalizeType($item) {
+        $type = $item['type'] ?? 'info';
+
+        if ($type === 'achievement') {
+            return 'achievement';
+        }
+
+        $text = mb_strtolower(($item['title'] ?? '') . ' ' . ($item['message'] ?? ''), 'UTF-8');
+        if ($type === 'info' && (strpos($text, 'програм') !== false || strpos($text, 'тренер') !== false)) {
+            return 'program';
+        }
+
+        return $type ?: 'info';
+    }
+
+    private function getTypeLabel($type) {
+        $labels = [
+            'message' => 'Повідомлення з чату',
+            'achievement' => 'Досягнення',
+            'program' => 'Програма тренера',
+            'success' => 'Успішна дія',
+            'warning' => 'Важливо',
+            'danger' => 'Помилка',
+            'info' => 'Сповіщення'
+        ];
+
+        return $labels[$type] ?? 'Сповіщення';
+    }
+
+    private function shorten($text, $length) {
+        if (mb_strlen($text, 'UTF-8') <= $length) {
+            return $text;
+        }
+
+        return mb_substr($text, 0, $length - 1, 'UTF-8') . '…';
+    }
 }
 
 /**

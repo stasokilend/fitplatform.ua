@@ -1644,3 +1644,50 @@ footer a {
         min-width: 0;
     }
 }
+
+/* ---------- Покращена статистика ---------- */
+.stats-hero {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background:
+        radial-gradient(circle at top right, rgba(108, 99, 255, 0.18), transparent 34%),
+        radial-gradient(circle at bottom left, rgba(0, 210, 160, 0.14), transparent 30%),
+        var(--white);
+}
+
+.stats-progress {
+    height: 10px;
+    border-radius: 50px;
+    background: rgba(108, 99, 255, 0.12);
+}
+
+.stats-progress .progress-bar {
+    border-radius: 50px;
+    transition: width 0.8s ease;
+}
+
+.mini-metric {
+    padding: 14px 10px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.74);
+    box-shadow: inset 0 0 0 1px rgba(108, 99, 255, 0.08);
+}
+
+.mini-metric strong {
+    display: block;
+    font-size: 1.35rem;
+    line-height: 1.1;
+    color: var(--dark);
+}
+
+.mini-metric span {
+    display: block;
+    margin-top: 4px;
+    color: var(--gray);
+    font-size: 0.78rem;
+}
+
+.dashboard-stats .stat-card small {
+    display: inline-block;
+    margin-top: 4px;
+}

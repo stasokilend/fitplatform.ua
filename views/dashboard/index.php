@@ -7,11 +7,18 @@ require_once 'config/database.php';
 require_once 'controllers/GamificationController.php';
 
 $gamification = new GamificationController($userId);
-$stats = $gamification->getGamificationStats();
+$gamificationStats = $gamification->getGamificationStats();
+$dashboardStats = getDashboardStats($userId);
+$stats = array_merge($gamificationStats, $dashboardStats);
 $recentAchievements = $gamification->getRecentAchievements(3);
 $summary = $gamification->getAchievementSummary();
 
 $profile = is_array($profile ?? null) ? $profile : [];
+$totalWorkouts = (int)($stats['total_workouts'] ?? 0);
+$completedWorkouts = (int)($stats['completed_workouts'] ?? 0);
+$completionRate = $totalWorkouts > 0 ? round(($completedWorkouts / $totalWorkouts) * 100) : 0;
+$currentStreak = (int)($stats['streak'] ?? 0);
+$levelProgress = (int)($stats['next_level'] ?? 0) > 0 ? round(((int)($stats['experience'] ?? 0) / (int)$stats['next_level']) * 100) : 0;
 ?>
 
 <div class="fade-in-up">
@@ -26,14 +33,37 @@ $profile = is_array($profile ?? null) ? $profile : [];
         </div>
     </div>
 
-    <!-- Статистика -->
-    <div class="row g-4 mb-4">
+    <!-- Міні-статистика -->
+    <div class="stats-hero card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-7">
+                    <span class="badge bg-primary-subtle text-primary mb-2">Швидкий огляд</span>
+                    <h4 class="mb-2">Сьогодні гарний день для прогресу</h4>
+                    <p class="text-muted mb-3">Завершено <?php echo $completionRate; ?>% тренувань. Поточна серія — <?php echo $currentStreak; ?> дн., прогрес рівня — <?php echo $levelProgress; ?>%.</p>
+                    <div class="progress stats-progress mb-2" role="progressbar" aria-valuenow="<?php echo $completionRate; ?>" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar bg-gradient-primary" style="width: <?php echo $completionRate; ?>%;"></div>
+                    </div>
+                    <a href="/dashboard.php?page=statistics" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-graph-up-arrow"></i> Детальна статистика</a>
+                </div>
+                <div class="col-lg-5">
+                    <div class="row g-3 text-center">
+                        <div class="col-4"><div class="mini-metric"><strong><?php echo $completedWorkouts; ?></strong><span>завершено</span></div></div>
+                        <div class="col-4"><div class="mini-metric"><strong><?php echo number_format($stats['total_calories'] ?? 0, 0, '.', ' '); ?></strong><span>ккал</span></div></div>
+                        <div class="col-4"><div class="mini-metric"><strong><?php echo $stats['level'] ?? 1; ?></strong><span>рівень</span></div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4 dashboard-stats">
         <div class="col-md-3">
             <div class="stat-card">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="stat-label">Тренувань</div>
-                        <div class="stat-number"><?php echo $stats['total_workouts'] ?? 0; ?></div>
+                        <div class="stat-number"><?php echo $totalWorkouts; ?></div>
                     </div>
                     <div class="stat-icon bg-primary">
                         <i class="bi bi-calendar-check"></i>
@@ -46,7 +76,7 @@ $profile = is_array($profile ?? null) ? $profile : [];
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="stat-label">Завершено</div>
-                        <div class="stat-number text-success"><?php echo $stats['completed_workouts'] ?? 0; ?></div>
+                        <div class="stat-number text-success"><?php echo $completedWorkouts; ?></div>
                     </div>
                     <div class="stat-icon bg-success">
                         <i class="bi bi-check-circle"></i>
@@ -59,7 +89,7 @@ $profile = is_array($profile ?? null) ? $profile : [];
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
                         <div class="stat-label">Калорій спалено</div>
-                        <div class="stat-number text-warning"><?php echo number_format($stats['total_calories'] ?? 0, 0); ?></div>
+                        <div class="stat-number text-warning"><?php echo number_format($stats['total_calories'] ?? 0, 0, '.', ' '); ?></div>
                     </div>
                     <div class="stat-icon bg-warning">
                         <i class="bi bi-fire"></i>

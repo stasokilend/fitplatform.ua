@@ -141,6 +141,11 @@
                 </a>
                 <a href="/dashboard.php?page=achievements" class="nav-link <?php echo ($_GET['page'] ?? '') === 'achievements' ? 'active' : ''; ?>">
                     <i class="bi bi-trophy"></i> Досягнення
+                    <?php if (isset($achievementMenuStats) && $achievementMenuStats): ?>
+                        <span class="badge bg-warning text-dark rounded-pill ms-1">
+                            <?php echo (int)$achievementMenuStats['completed_achievements']; ?>/<?php echo (int)$achievementMenuStats['total_achievements']; ?>
+                        </span>
+                    <?php endif; ?>
                 </a>
             <?php else: ?>
                 <a href="/dashboard.php?page=clients" class="nav-link <?php echo ($_GET['page'] ?? '') === 'clients' ? 'active' : ''; ?>">

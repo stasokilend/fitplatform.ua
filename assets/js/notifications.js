@@ -12,11 +12,17 @@ function checkNotifications() {
     fetch('/api/notifications.php')
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.count > 0) {
-                updateNotificationBadge(data.count);
-                if (data.notifications) {
-                    showNotificationPopup(data.notifications[0]);
-                }
+            if (!data.success) return;
+
+            const payload = data.data || {};
+            const count = Number(data.count ?? payload.unread_count ?? 0);
+            const notifications = data.notifications || payload.notifications || [];
+
+            updateNotificationBadge(count);
+
+            if (count > 0 && notifications.length > 0) {
+                const newestUnread = notifications.find(item => Number(item.is_read) === 0) || notifications[0];
+                showNotificationPopup(newestUnread);
             }
         })
         .catch(error => console.error('Ошибка получения уведомлений:', error));
@@ -48,7 +54,8 @@ function showNotificationPopup(notification) {
         'success': 'bg-success',
         'warning': 'bg-warning',
         'danger': 'bg-danger',
-        'info': 'bg-info'
+        'info': 'bg-info',
+        'achievement': 'bg-warning'
     };
     
     const bgColor = colors[notification.type] || 'bg-info';
@@ -56,7 +63,7 @@ function showNotificationPopup(notification) {
     const html = `
         <div class="toast notification-toast" data-id="${notification.id}" role="alert">
             <div class="toast-header ${bgColor} text-white">
-                <i class="bi bi-bell-fill me-2"></i>
+                <i class="bi ${notification.icon || 'bi-bell-fill'} me-2"></i>
                 <strong class="me-auto">FitPlatform</strong>
                 <small>${timeAgo(notification.created_at)}</small>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>

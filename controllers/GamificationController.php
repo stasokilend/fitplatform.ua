@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/NotificationController.php';
 
 class GamificationController {
     private $pdo;
@@ -40,20 +41,29 @@ class GamificationController {
      * Обновление статистики после тренировки
      */
     public function updateStats($calories, $exercisesCompleted, $isComplete = true) {
+        $calories = max(0, (int)round($calories));
+        $exercisesCompleted = max(0, (int)$exercisesCompleted);
+
+        // Сначала обновляем серию: ей нужна дата прошлой тренировки,
+        // а не уже записанная сегодняшняя дата.
+        if ($isComplete) {
+            $this->updateStreak();
+        }
+
         // Обновляем основные показатели
         $stmt = $this->pdo->prepare("
             UPDATE user_gamification_stats 
             SET 
-                total_workouts = total_workouts + 1,
+                total_workouts = total_workouts + ?,
                 total_calories = total_calories + ?,
                 total_exercises_completed = total_exercises_completed + ?,
                 last_workout_date = CURDATE()
             WHERE user_id = ?
         ");
-        $stmt->execute([$calories, $exercisesCompleted, $this->userId]);
-        
-        // Обновляем серию
-        $this->updateStreak();
+        $stmt->execute([$isComplete ? 1 : 0, $calories, $exercisesCompleted, $this->userId]);
+
+        // Обновляем локальную статистику перед проверкой достижений.
+        $this->loadStats();
         
         // Обновляем опыт и уровень
         $this->addExperience($exercisesCompleted * 5 + $calories / 10);
@@ -96,6 +106,8 @@ class GamificationController {
             WHERE user_id = ?
         ");
         $stmt->execute([$newStreak, $maxStreak, $this->userId]);
+        $this->stats['current_streak'] = $newStreak;
+        $this->stats['max_streak'] = $maxStreak;
     }
     
     /**
@@ -236,14 +248,20 @@ public function getAchievementsByCategory() {
      * Обновление прогресса достижения
      */
     private function updateProgress($achievementCode, $progress) {
+        $stmt = $this->pdo->prepare("SELECT id FROM achievements WHERE code = ?");
+        $stmt->execute([$achievementCode]);
+        $achievement = $stmt->fetch();
+
+        if (!$achievement) {
+            return;
+        }
+
         $stmt = $this->pdo->prepare("
-            UPDATE user_achievements 
-            SET progress = ? 
-            WHERE user_id = ? AND achievement_id = (
-                SELECT id FROM achievements WHERE code = ?
-            )
+            INSERT INTO user_achievements (user_id, achievement_id, is_completed, progress)
+            VALUES (?, ?, 0, ?)
+            ON DUPLICATE KEY UPDATE progress = VALUES(progress)
         ");
-        $stmt->execute([$progress, $this->userId, $achievementCode]);
+        $stmt->execute([$this->userId, $achievement['id'], max(0, (int)round($progress))]);
     }
     
     /**
@@ -262,7 +280,7 @@ public function getAchievementsByCategory() {
         }
         
         // Получаем ID достижения
-        $stmt = $this->pdo->prepare("SELECT id, points FROM achievements WHERE code = ?");
+        $stmt = $this->pdo->prepare("SELECT id, code, name, description, icon, points, requirement_value FROM achievements WHERE code = ?");
         $stmt->execute([$achievementCode]);
         $achievement = $stmt->fetch();
         
@@ -276,14 +294,40 @@ public function getAchievementsByCategory() {
             VALUES (?, ?, 1, ?)
             ON DUPLICATE KEY UPDATE is_completed = 1, progress = ?, unlocked_at = NOW()
         ");
-        $stmt->execute([$this->userId, $achievement['id'], $achievement['points'], $achievement['points']]);
+        $progress = max((int)$achievement['requirement_value'], (int)$achievement['points']);
+        $stmt->execute([$this->userId, $achievement['id'], $progress, $progress]);
         
         // Добавляем опыт за достижение
         $this->addExperience($achievement['points'] * 2);
+
+        $this->notifyAchievementUnlocked($achievement);
         
         return true;
     }
     
+
+    /**
+     * Уведомление о новом достижении.
+     */
+    private function notifyAchievementUnlocked($achievement) {
+        $notification = new NotificationController($this->userId);
+        $created = $notification->createFromTemplate('achievement_unlocked', [
+            'achievement_name' => $achievement['name'],
+            'points' => $achievement['points'],
+            'link' => '/dashboard.php?page=achievements'
+        ]);
+
+        if (!$created) {
+            $notification->create(
+                'achievement',
+                'Нове досягнення!',
+                'Ви отримали досягнення «' . $achievement['name'] . '» та +' . (int)$achievement['points'] . ' балів.',
+                $achievement['icon'] ?: 'bi-trophy',
+                '/dashboard.php?page=achievements'
+            );
+        }
+    }
+
     /**
      * Получение всех достижений пользователя
      */
@@ -297,7 +341,7 @@ public function getAchievementsByCategory() {
                 CASE WHEN ua.is_completed = 1 THEN ua.progress ELSE 0 END as points_earned
             FROM achievements a
             LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = ?
-            ORDER BY ua.is_completed DESC, a.category, a.requirement_value ASC
+            ORDER BY ua.is_completed DESC, a.category, a.order_num ASC, a.requirement_value ASC
         ");
         $stmt->execute([$this->userId]);
         return $stmt->fetchAll();

@@ -59,17 +59,10 @@ if ($action === 'unlock') {
     $result = $gamification->unlockAchievement($achievementCode);
     
     if ($result) {
-        // Получаем детали достижения для уведомления
+        // Получаем детали достижения. Уведомление создается внутри GamificationController.
         $stmt = $pdo->prepare("SELECT * FROM achievements WHERE code = ?");
         $stmt->execute([$achievementCode]);
         $achievement = $stmt->fetch();
-        
-        // Создаем уведомление
-        require_once __DIR__ . '/../controllers/NotificationController.php';
-        $notification = new NotificationController($userId);
-        $notification->createFromTemplate('achievement_unlocked', [
-            'achievement_name' => $achievement['name']
-        ]);
         
         echo json_encode([
             'success' => true,

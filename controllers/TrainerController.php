@@ -20,7 +20,7 @@ class TrainerController {
                 u.*,
                 up.age, up.weight, up.height, up.fitness_level, up.goal_type,
                 tc.notes, tc.goals, tc.health_conditions, tc.last_visit,
-                tc.assigned_at,
+                tc.assigned_at, tc.status,
                 (SELECT COUNT(*) FROM chat_messages cm
                  JOIN chats c ON cm.chat_id = c.id
                  WHERE (c.user1_id = u.id OR c.user2_id = u.id)
@@ -136,7 +136,7 @@ class TrainerController {
                 up.fitness_level, up.goal_type, up.target_weight,
                 up.medical_notes,
                 tc.notes, tc.goals, tc.health_conditions, tc.last_visit,
-                tc.assigned_at,
+                tc.assigned_at, tc.status,
                 (SELECT COUNT(*) FROM chat_messages cm
                  JOIN chats c ON cm.chat_id = c.id
                  WHERE (c.user1_id = u.id OR c.user2_id = u.id)

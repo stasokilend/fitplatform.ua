@@ -4,15 +4,8 @@ require_once 'controllers/TrainerController.php';
 $trainer = new TrainerController($userId);
 $clients = $trainer->getClients('active');
 
-// Получаем всех пользователей для добавления
-$stmt = $pdo->prepare("
-    SELECT id, full_name, email FROM users 
-    WHERE role = 'user' AND id NOT IN (
-        SELECT client_id FROM trainer_clients WHERE trainer_id = ?
-    )
-");
-$stmt->execute([$userId]);
-$availableUsers = $stmt->fetchAll();
+// Получаем пользователей, которых тренер может добавить
+$availableUsers = $trainer->getAvailableClients();
 ?>
 
 <div class="fade-in-up">
@@ -105,9 +98,17 @@ $availableUsers = $stmt->fetchAll();
             </div>
             <form id="addClientForm">
                 <div class="modal-body">
+                    <div class="alert alert-info small">
+                        <i class="bi bi-info-circle"></i> Додати можна лише зареєстрованого активного користувача, який ще не є вашим клієнтом. Після додавання чат створиться автоматично.
+                    </div>
                     <div class="mb-3">
-                        <label class="form-label">Виберіть клієнта</label>
-                        <select name="client_id" class="form-select" required>
+                        <label class="form-label" for="clientSearchInput">Пошук клієнта</label>
+                        <input type="search" id="clientSearchInput" class="form-control" placeholder="Ім’я або email" autocomplete="off">
+                        <div class="form-text">Почніть вводити ім’я або email, щоб швидко знайти користувача.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="clientSelect">Виберіть клієнта</label>
+                        <select name="client_id" id="clientSelect" class="form-select" required <?php echo count($availableUsers) === 0 ? 'disabled' : ''; ?>>
                             <option value="">-- Виберіть --</option>
                             <?php foreach ($availableUsers as $user): ?>
                                 <option value="<?php echo $user['id']; ?>">
@@ -115,9 +116,9 @@ $availableUsers = $stmt->fetchAll();
                                 </option>
                             <?php endforeach; ?>
                         </select>
-                        <?php if (count($availableUsers) === 0): ?>
-                            <small class="text-muted">Всі користувачі вже є вашими клієнтами</small>
-                        <?php endif; ?>
+                        <small class="text-muted" id="clientSelectHelp">
+                            <?php echo count($availableUsers) === 0 ? 'Немає доступних користувачів для додавання.' : 'Доступно користувачів: ' . count($availableUsers); ?>
+                        </small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Нотатки</label>
@@ -126,7 +127,7 @@ $availableUsers = $stmt->fetchAll();
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
-                    <button type="submit" class="btn btn-primary" id="addClientBtn">Додати</button>
+                    <button type="submit" class="btn btn-primary" id="addClientBtn" <?php echo count($availableUsers) === 0 ? 'disabled' : ''; ?>>Додати</button>
                 </div>
             </form>
         </div>
@@ -156,6 +157,54 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    const clientSelect = document.getElementById('clientSelect');
+    const clientSearchInput = document.getElementById('clientSearchInput');
+    const clientSelectHelp = document.getElementById('clientSelectHelp');
+
+    function renderClientOptions(users) {
+        clientSelect.innerHTML = '<option value="">-- Виберіть --</option>';
+        users.forEach(function(user) {
+            const option = document.createElement('option');
+            option.value = user.id;
+            option.textContent = user.full_name + ' (' + user.email + ')';
+            clientSelect.appendChild(option);
+        });
+        clientSelect.disabled = users.length === 0;
+        document.getElementById('addClientBtn').disabled = users.length === 0;
+        clientSelectHelp.textContent = users.length === 0
+            ? 'Користувачів за цим пошуком не знайдено.'
+            : 'Знайдено користувачів: ' + users.length;
+    }
+
+    let clientSearchTimer = null;
+    clientSearchInput.addEventListener('input', function() {
+        clearTimeout(clientSearchTimer);
+        clientSearchTimer = setTimeout(function() {
+            const params = new URLSearchParams({
+                action: 'available_clients',
+                search: clientSearchInput.value.trim()
+            });
+
+            fetch('/api/trainer.php?' + params.toString())
+                .then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data.success) {
+                        renderClientOptions(data.data || []);
+                    } else {
+                        showToast(data.error || 'Помилка пошуку клієнтів', 'danger');
+                    }
+                })
+                .catch(function(error) {
+                    showToast('Помилка пошуку клієнтів: ' + error.message, 'danger');
+                });
+        }, 300);
+    });
+
     // Добавление клиента
     document.getElementById('addClientForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -171,7 +220,22 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(function(response) {
+            return response.text().then(function(text) {
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (error) {
+                    throw new Error(text || 'Сервер повернув некоректну відповідь');
+                }
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'HTTP ' + response.status);
+                }
+
+                return data;
+            });
+        })
         .then(data => {
             btn.disabled = false;
             btn.innerHTML = 'Додати';
@@ -183,10 +247,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 showToast(data.error || 'Помилка додавання', 'danger');
             }
         })
-        .catch(function() {
+        .catch(function(error) {
             btn.disabled = false;
             btn.innerHTML = 'Додати';
-            showToast('Помилка з\'єднання', 'danger');
+            showToast('Помилка додавання клієнта: ' + error.message, 'danger');
         });
     });
 });

@@ -14,14 +14,37 @@ function registerUser($email, $password, $fullName) {
     $hash = password_hash($password, PASSWORD_DEFAULT);
     $stmt = $pdo->prepare("INSERT INTO users (email, password_hash, full_name, role) VALUES (?, ?, ?, 'user')");
     
-    if ($stmt->execute([$email, $hash, $fullName])) {
+    try {
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare(
+            "INSERT INTO users (email, password_hash, full_name, role)
+            VALUES (?, ?, ?, 'user')"
+        );
+        $stmt->execute([$email, $hash, $fullName]);
+
         $userId = $pdo->lastInsertId();
-        
-        // Создаем пустой профиль
-        $stmt = $pdo->prepare("INSERT INTO user_profiles (user_id, profile_completed) VALUES (?, 0)");
+
+        $stmt = $pdo->prepare(
+            "INSERT INTO user_profiles (user_id, profile_completed)
+            VALUES (?, 0)"
+        );
         $stmt->execute([$userId]);
-        
-        return ['success' => true, 'user_id' => $userId];
+
+        $pdo->commit();
+
+        return [
+            'success' => true,
+            'user_id' => $userId
+        ];
+
+    } catch (Exception $e) {
+        $pdo->rollBack();
+
+        return [
+            'success' => false,
+            'error' => $e->getMessage()
+        ];
     }
     
     return ['success' => false, 'error' => 'Помилка реєстрації'];

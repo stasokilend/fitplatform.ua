@@ -10,6 +10,8 @@ $gamification = new GamificationController($userId);
 $stats = $gamification->getGamificationStats();
 $recentAchievements = $gamification->getRecentAchievements(3);
 $summary = $gamification->getAchievementSummary();
+
+$profile = is_array($profile ?? null) ? $profile : [];
 ?>
 
 <div class="fade-in-up">
@@ -107,19 +109,19 @@ $summary = $gamification->getAchievementSummary();
                             <small class="text-muted d-block">Мета</small>
                             <p class="fw-semibold"><?php echo getGoalTypeLabel($profile['goal_type'] ?? 'health'); ?></p>
                         </div>
-                        <?php if ($profile['target_weight']): ?>
+                        <?php if (!empty($profile['target_weight'])): ?>
                         <div class="col-12">
                             <small class="text-muted d-block">Цільова вага</small>
-                            <p class="fw-semibold"><?php echo $profile['target_weight']; ?> кг</p>
+                            <p class="fw-semibold"><?php echo htmlspecialchars($profile['target_weight']); ?> кг</p>
                         </div>
                         <?php endif; ?>
                     </div>
-                    <?php if ($profile['medical_notes']): ?>
-                        <div class="mt-2">
-                            <small class="text-muted d-block">Медичні обмеження</small>
-                            <p class="small text-muted"><?php echo htmlspecialchars($profile['medical_notes']); ?></p>
-                        </div>
-                    <?php endif; ?>
+                    <?php if (!empty($profile['medical_notes'])): ?>
+                    <div class="mt-2">
+                        <small class="text-muted d-block">Медичні обмеження</small>
+                        <p class="small text-muted"><?php echo htmlspecialchars($profile['medical_notes']); ?></p>
+                    </div>
+                <?php endif; ?>
                 </div>
             </div>
         </div>

@@ -121,6 +121,16 @@ if ($action === 'complete') {
         $completed = count(array_filter($exercises, function($ex) {
             return $ex['is_completed'];
         }));
+
+        if ($calories <= 0) {
+            $calories = 0;
+            foreach ($exercises as $exercise) {
+                if (!empty($exercise['is_completed'])) {
+                    $calories += (float)($exercise['calories_per_min'] ?? 0) * (int)($exercise['duration_min'] ?? 0);
+                }
+            }
+            $calories = (int)round($calories);
+        }
         
         $gamification->updateStats($calories, $completed, true);
         

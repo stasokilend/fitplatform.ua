@@ -5,6 +5,7 @@ requireLogin();
 require_once 'config/database.php';
 require_once 'controllers/ProfileController.php';
 require_once 'includes/functions.php';
+require_once 'controllers/GamificationController.php';
 
 // Проверяем актуальность роли в сессии
 $stmt = $pdo->prepare("SELECT role, full_name FROM users WHERE id = ?");
@@ -22,6 +23,10 @@ $userId = $_SESSION['user_id'];
 $profile = getUserProfile($userId);
 $stats = getDashboardStats($userId);
 $role = $_SESSION['user_role'];
+$achievementMenuStats = null;
+if ($role !== 'trainer') {
+    $achievementMenuStats = (new GamificationController($userId))->getGamificationStats();
+}
 
 $pageTitle = 'Кабінет';
 ob_start();
@@ -105,6 +110,11 @@ ob_start();
                             <a class="nav-link <?php echo ($_GET['page'] ?? '') === 'achievements' ? 'active' : ''; ?>" 
                                href="/dashboard.php?page=achievements">
                                 <i class="bi bi-trophy"></i> Досягнення
+                                <?php if ($achievementMenuStats): ?>
+                                    <span class="badge bg-warning text-dark rounded-pill ms-1">
+                                        <?php echo (int)$achievementMenuStats['completed_achievements']; ?>/<?php echo (int)$achievementMenuStats['total_achievements']; ?>
+                                    </span>
+                                <?php endif; ?>
                             </a>
                         </li>
                     <?php endif; ?>

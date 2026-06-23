@@ -235,6 +235,52 @@ INSERT INTO `medical_restrictions` (`id`, `name`, `icon`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Структура таблицы `notifications`
+--
+
+CREATE TABLE `notifications` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `type` varchar(50) DEFAULT 'info',
+  `title` varchar(150) NOT NULL,
+  `message` text NOT NULL,
+  `icon` varchar(50) DEFAULT 'bi-bell',
+  `link` varchar(255) DEFAULT NULL,
+  `is_read` tinyint(1) DEFAULT '0',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_notifications_user_read` (`user_id`,`is_read`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `notification_templates`
+--
+
+CREATE TABLE `notification_templates` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `code` varchar(80) NOT NULL,
+  `type` varchar(50) DEFAULT 'info',
+  `title` varchar(150) NOT NULL,
+  `message` text NOT NULL,
+  `icon` varchar(50) DEFAULT 'bi-bell',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Дамп данных таблицы `notification_templates`
+--
+
+INSERT INTO `notification_templates` (`code`, `type`, `title`, `message`, `icon`) VALUES
+('achievement_unlocked', 'achievement', 'Нове досягнення!', 'Ви отримали досягнення «{achievement_name}» та +{points} балів.', 'bi-trophy'),
+('workout_completed', 'success', 'Тренування завершено', 'Ви завершили «{workout_name}» і спалили {calories} ккал.', 'bi-check-circle');
+
+-- --------------------------------------------------------
+
+--
 -- Структура таблицы `plan_exercises`
 --
 

@@ -12,6 +12,7 @@ $recentAchievements = $gamification->getRecentAchievements(3);
 $summary = $gamification->getAchievementSummary();
 
 $profile = is_array($profile ?? null) ? $profile : [];
+$caloriePlan = calculateCaloriePlan($profile);
 ?>
 
 <div class="fade-in-up">
@@ -86,8 +87,8 @@ $profile = is_array($profile ?? null) ? $profile : [];
 
     <div class="row">
         <!-- Профиль кратко -->
-        <div class="col-md-6">
-            <div class="card border-0 shadow-sm">
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent border-0">
                     <h5 class="mb-0"><i class="bi bi-person text-primary"></i> Мій профіль</h5>
                 </div>
@@ -126,8 +127,42 @@ $profile = is_array($profile ?? null) ? $profile : [];
             </div>
         </div>
 
+        <!-- Калории -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-fire text-warning"></i> Калорійна ціль</h5>
+                    <a href="/dashboard.php?page=calories" class="btn btn-sm btn-outline-primary">Деталі</a>
+                </div>
+                <div class="card-body">
+                    <?php if ($caloriePlan['is_complete']): ?>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div>
+                                <small class="text-muted d-block">Рекомендовано на день</small>
+                                <div class="display-6 text-warning fw-bold"><?php echo number_format($caloriePlan['target_calories']); ?> ккал</div>
+                            </div>
+                            <div class="stat-icon bg-warning">
+                                <i class="bi bi-lightning-charge"></i>
+                            </div>
+                        </div>
+                        <div class="row text-center g-2">
+                            <div class="col-4"><small class="text-muted d-block">Білки</small><strong><?php echo number_format($caloriePlan['protein_g']); ?> г</strong></div>
+                            <div class="col-4"><small class="text-muted d-block">Жири</small><strong><?php echo number_format($caloriePlan['fat_g']); ?> г</strong></div>
+                            <div class="col-4"><small class="text-muted d-block">Вуглеводи</small><strong><?php echo number_format($caloriePlan['carbs_g']); ?> г</strong></div>
+                        </div>
+                    <?php else: ?>
+                        <div class="text-center text-muted py-3">
+                            <i class="bi bi-clipboard-pulse display-6 d-block mb-2"></i>
+                            <p class="mb-2">Заповніть профіль, щоб отримати персональну норму калорій.</p>
+                            <a href="/profile-setup.php" class="btn btn-sm btn-warning">Заповнити</a>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
         <!-- Последняя активность -->
-        <div class="col-md-6">
+        <div class="col-md-6 mb-4">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-transparent border-0">
                     <h5 class="mb-0"><i class="bi bi-clock-history text-primary"></i> Остання активність</h5>

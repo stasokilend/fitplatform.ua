@@ -148,6 +148,24 @@ if ($action === 'complete') {
     exit;
 }
 
+
+// --- УДАЛЕНИЕ ТРЕНИРОВКИ ---
+if ($action === 'delete') {
+    $workoutId = (int)($_POST['workout_id'] ?? 0);
+
+    if (!$workoutId) {
+        echo json_encode(['success' => false, 'error' => 'ID не вказано']);
+        exit;
+    }
+
+    $success = $workout->deleteWorkout($workoutId);
+    echo json_encode([
+        'success' => $success,
+        'error' => $success ? null : 'Тренування не знайдено або вже видалено'
+    ]);
+    exit;
+}
+
 // --- ДОБАВЛЕНИЕ ЗАМЕТКИ ---
 if ($action === 'add_note') {
     $workoutId = (int)($_POST['workout_id'] ?? 0);

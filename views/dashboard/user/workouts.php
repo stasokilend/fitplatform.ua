@@ -91,7 +91,7 @@ $templates = $workout->getTemplates(5);
                     ? round(($plan['completed_exercises'] / $plan['total_exercises']) * 100) 
                     : 0;
             ?>
-                <div class="col-md-6 col-lg-4 workout-card-item">
+                <div class="col-md-6 col-lg-4 workout-card-item" data-workout-id="<?php echo (int)$plan['id']; ?>">
                     <div class="card workout-card h-100">
                         <div class="card-header-custom">
                             <div class="d-flex justify-content-between align-items-center">
@@ -99,9 +99,30 @@ $templates = $workout->getTemplates(5);
                                     <i class="bi bi-dumbbell me-2"></i>
                                     <?php echo htmlspecialchars($plan['name']); ?>
                                 </span>
-                                <span class="badge bg-white bg-opacity-25">
-                                    <?php echo $plan['status'] === 'completed' ? '✅' : ($plan['status'] === 'in_progress' ? '⏳' : '📋'); ?>
-                                </span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-white bg-opacity-25">
+                                        <?php echo $plan['status'] === 'completed' ? '✅' : ($plan['status'] === 'in_progress' ? '⏳' : '📋'); ?>
+                                    </span>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-link text-white p-0 workout-actions-toggle" 
+                                                type="button" 
+                                                data-bs-toggle="dropdown" 
+                                                aria-expanded="false"
+                                                aria-label="Меню тренування">
+                                            <i class="bi bi-three-dots-vertical fs-5"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                            <li>
+                                                <button class="dropdown-item text-danger delete-workout-btn" 
+                                                        type="button"
+                                                        data-workout-id="<?php echo (int)$plan['id']; ?>"
+                                                        data-workout-name="<?php echo htmlspecialchars($plan['name'], ENT_QUOTES); ?>">
+                                                    <i class="bi bi-trash me-2"></i> Видалити
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="card-body">
@@ -248,6 +269,47 @@ $templates = $workout->getTemplates(5);
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.delete-workout-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const workoutId = this.dataset.workoutId;
+            const workoutName = this.dataset.workoutName || 'тренування';
+
+            if (!confirm(`Видалити "${workoutName}" зі списку тренувань?`)) return;
+
+            const formData = new FormData();
+            formData.append('action', 'delete');
+            formData.append('workout_id', workoutId);
+
+            this.disabled = true;
+
+            fetch('/api/workout.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const card = document.querySelector(`.workout-card-item[data-workout-id="${workoutId}"]`);
+                    if (card) {
+                        card.remove();
+                    }
+                    showToast('Тренування видалено зі списку', 'success');
+
+                    if (!document.querySelector('.workout-card-item')) {
+                        window.location.reload();
+                    }
+                } else {
+                    this.disabled = false;
+                    showToast(data.error || 'Не вдалося видалити тренування', 'danger');
+                }
+            })
+            .catch(() => {
+                this.disabled = false;
+                showToast('Помилка з\'єднання', 'danger');
+            });
+        });
+    });
+
     // Использование шаблона
     document.querySelectorAll('.use-template-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {

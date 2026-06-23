@@ -16,6 +16,10 @@ function url(string $path = ''): string {
     return ($base !== '' ? $base : '') . $path;
 }
 
+function asset(string $path): string {
+    return url($path);
+}
+
 function getCurrentPage() { return basename($_SERVER['PHP_SELF']); }
 function isActivePage($page) { return getCurrentPage() === $page ? 'active' : ''; }
 function calculateBMR($weight, $height, $age, $gender) { $bmr = 10 * $weight + 6.25 * $height - 5 * $age; $bmr += ($gender === 'male') ? 5 : -161; return $bmr; }

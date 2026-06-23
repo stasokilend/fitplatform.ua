@@ -132,7 +132,7 @@ if ($action === 'complete') {
             $calories = (int)round($calories);
         }
         
-        $gamification->updateStats($calories, $completed, true);
+        $gamification->recordWorkoutCompleted($workoutId, $calories, $completed, count($exercises));
         
         // Создаем уведомление
         require_once __DIR__ . '/../controllers/NotificationController.php';

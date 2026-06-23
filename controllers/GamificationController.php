@@ -76,6 +76,79 @@ class GamificationController {
     }
     
     /**
+     * Обработка события завершения тренировки: обновляет статистику,
+     * проверяет обычные и специальные достижения и создает уведомления.
+     */
+    public function recordWorkoutCompleted($workoutId, $calories, $exercisesCompleted, $totalExercises = null) {
+        $this->updateStats($calories, $exercisesCompleted, true);
+
+        $this->checkWorkoutEventAchievements(
+            (int)$workoutId,
+            max(0, (int)$exercisesCompleted),
+            $totalExercises === null ? null : max(0, (int)$totalExercises)
+        );
+
+        $this->loadStats();
+    }
+
+    /**
+     * Проверка достижений, которые зависят от конкретного события тренировки.
+     */
+    private function checkWorkoutEventAchievements($workoutId, $exercisesCompleted, $totalExercises = null) {
+        $hour = (int)date('G');
+
+        if ($hour < 7) {
+            $this->unlockAchievement('early_bird');
+        }
+
+        if ($hour >= 22) {
+            $this->unlockAchievement('night_owl');
+        }
+
+        if ($totalExercises === null) {
+            $stmt = $this->pdo->prepare("
+                SELECT COUNT(*) as total
+                FROM plan_exercises
+                WHERE plan_id = ?
+            ");
+            $stmt->execute([$workoutId]);
+            $totalExercises = (int)($stmt->fetch()['total'] ?? 0);
+        }
+
+        if ($totalExercises > 0 && $exercisesCompleted >= $totalExercises) {
+            $this->unlockAchievement('perfect_workout');
+        }
+
+        $fullWorkouts = $this->getFullyCompletedWorkoutsCount();
+        if ($fullWorkouts >= 10) {
+            $this->unlockAchievement('consistency');
+        } else {
+            $this->updateProgress('consistency', $fullWorkouts);
+        }
+    }
+
+    /**
+     * Количество тренировок пользователя, в которых выполнены все упражнения.
+     */
+    private function getFullyCompletedWorkoutsCount() {
+        $stmt = $this->pdo->prepare("
+            SELECT COUNT(*) as total
+            FROM (
+                SELECT wp.id
+                FROM workout_plans wp
+                JOIN plan_exercises pe ON pe.plan_id = wp.id
+                WHERE wp.user_id = ? AND wp.status = 'completed'
+                GROUP BY wp.id
+                HAVING COUNT(pe.id) > 0
+                   AND COUNT(pe.id) = SUM(CASE WHEN pe.is_completed = 1 THEN 1 ELSE 0 END)
+            ) completed_plans
+        ");
+        $stmt->execute([$this->userId]);
+
+        return (int)($stmt->fetch()['total'] ?? 0);
+    }
+
+    /**
      * Обновление серии (стрейка)
      */
     private function updateStreak() {
@@ -238,6 +311,9 @@ public function getAchievementsByCategory() {
             case 'exercises':
                 return $this->stats['total_exercises_completed'] ?? 0;
             case 'special':
+                if (($achievement['code'] ?? '') === 'consistency') {
+                    return $this->getFullyCompletedWorkoutsCount();
+                }
                 return 0;
             default:
                 return 0;
@@ -259,7 +335,7 @@ public function getAchievementsByCategory() {
         $stmt = $this->pdo->prepare("
             INSERT INTO user_achievements (user_id, achievement_id, is_completed, progress)
             VALUES (?, ?, 0, ?)
-            ON DUPLICATE KEY UPDATE progress = VALUES(progress)
+            ON DUPLICATE KEY UPDATE progress = IF(is_completed = 1, progress, VALUES(progress))
         ");
         $stmt->execute([$this->userId, $achievement['id'], max(0, (int)round($progress))]);
     }

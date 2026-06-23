@@ -92,6 +92,14 @@ if ($action === 'clients') {
     exit;
 }
 
+// --- ПОЛУЧЕНИЕ ПОЛЬЗОВАТЕЛЕЙ ДЛЯ ДОБАВЛЕНИЯ В КЛИЕНТЫ ---
+if ($action === 'available_clients') {
+    $search = $_GET['search'] ?? '';
+    $clients = $trainer->getAvailableClients($search);
+    echo json_encode(['success' => true, 'data' => $clients]);
+    exit;
+}
+
 // --- ПОЛУЧЕНИЕ КЛИЕНТА ---
 if ($action === 'client') {
     $clientId = (int)($_GET['id'] ?? 0);
@@ -196,33 +204,8 @@ if ($action === 'assign_program') {
 if ($action === 'add_client') {
     $clientId = (int)($_POST['client_id'] ?? 0);
     $notes = trim($_POST['notes'] ?? '');
-    
-    if (!$clientId) {
-        echo json_encode(['success' => false, 'error' => 'Виберіть клієнта']);
-        exit;
-    }
-    
-    global $pdo;
-    $stmt = $pdo->prepare("SELECT id FROM trainer_clients WHERE trainer_id = ? AND client_id = ?");
-    $stmt->execute([$userId, $clientId]);
-    if ($stmt->fetch()) {
-        echo json_encode(['success' => false, 'error' => 'Цей клієнт вже доданий']);
-        exit;
-    }
-    
-    $stmt = $pdo->prepare("
-        INSERT INTO trainer_clients (trainer_id, client_id, notes, status, assigned_at)
-        VALUES (?, ?, ?, 'active', NOW())
-    ");
-    $success = $stmt->execute([$userId, $clientId, $notes]);
-    
-    if ($success) {
-        require_once __DIR__ . '/../controllers/ChatController.php';
-        $chat = new ChatController($userId);
-        $chat->getOrCreateChat($clientId);
-    }
-    
-    echo json_encode(['success' => $success]);
+
+    echo json_encode($trainer->addClient($clientId, $notes));
     exit;
 }
 
@@ -544,7 +527,7 @@ if ($action === 'add_schedule') {
     }
     
     // Проверяем, что клиент принадлежит тренеру
-    $stmt = $pdo->prepare("SELECT id FROM trainer_clients WHERE trainer_id = ? AND client_id = ? AND status = 'active'");
+    $stmt = $pdo->prepare("SELECT 1 FROM trainer_clients WHERE trainer_id = ? AND client_id = ? AND status = 'active'");
     $stmt->execute([$userId, $clientId]);
     if (!$stmt->fetch()) {
         echo json_encode(['success' => false, 'error' => 'Клієнт не знайдений або неактивний']);

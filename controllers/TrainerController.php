@@ -39,6 +39,92 @@ class TrainerController {
         return $stmt->fetchAll();
     }
     
+
+    /**
+     * Получение пользователей, которых тренер может добавить в клиенты.
+     */
+    public function getAvailableClients($search = '', $limit = 100) {
+        $search = trim((string)$search);
+        $limit = max(1, min(200, (int)$limit));
+
+        $params = [$this->trainerId];
+        $where = "u.role = 'user' AND u.is_active = 1 AND NOT EXISTS (
+            SELECT 1 FROM trainer_clients tc
+            WHERE tc.trainer_id = ? AND tc.client_id = u.id
+        )";
+
+        if ($search !== '') {
+            $where .= " AND (u.full_name LIKE ? OR u.email LIKE ?)";
+            $like = '%' . $search . '%';
+            $params[] = $like;
+            $params[] = $like;
+        }
+
+        $stmt = $this->pdo->prepare("
+            SELECT u.id, u.full_name, u.email
+            FROM users u
+            WHERE {$where}
+            ORDER BY u.full_name, u.email
+            LIMIT {$limit}
+        ");
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Добавление клиента тренеру вместе с созданием чата.
+     */
+    public function addClient($clientId, $notes = '') {
+        $clientId = (int)$clientId;
+        $notes = trim((string)$notes);
+
+        if (!$clientId) {
+            return ['success' => false, 'error' => 'Виберіть клієнта'];
+        }
+
+        try {
+            $stmt = $this->pdo->prepare("
+                SELECT id FROM users
+                WHERE id = ? AND role = 'user' AND is_active = 1
+            ");
+            $stmt->execute([$clientId]);
+            if (!$stmt->fetch()) {
+                return ['success' => false, 'error' => 'Користувача не знайдено або його не можна додати'];
+            }
+
+            $stmt = $this->pdo->prepare("
+                SELECT 1 FROM trainer_clients
+                WHERE trainer_id = ? AND client_id = ?
+                LIMIT 1
+            ");
+            $stmt->execute([$this->trainerId, $clientId]);
+            if ($stmt->fetchColumn()) {
+                return ['success' => false, 'error' => 'Цей клієнт вже доданий'];
+            }
+
+            $this->pdo->beginTransaction();
+
+            $stmt = $this->pdo->prepare("
+                INSERT INTO trainer_clients (trainer_id, client_id, notes, status, assigned_at)
+                VALUES (?, ?, ?, 'active', NOW())
+            ");
+            $stmt->execute([$this->trainerId, $clientId, $notes]);
+
+            require_once __DIR__ . '/ChatController.php';
+            $chat = new ChatController($this->trainerId);
+            $chat->getOrCreateChat($clientId);
+
+            $this->pdo->commit();
+            return ['success' => true];
+        } catch (Exception $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Trainer add client error: ' . $e->getMessage());
+            return ['success' => false, 'error' => 'Помилка додавання клієнта. Спробуйте ще раз.'];
+        }
+    }
+
     /**
      * Получение клиента по ID
      */

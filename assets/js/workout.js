@@ -138,20 +138,32 @@ function completeWorkout() {
     formData.append('completed', completed);
     formData.append('total', totalExercises);
     
-    fetch('/api/workout-complete.php', {
+    fetch('/api/workout.php', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('🎉 Тренування завершено!', 'success');
-            setTimeout(() => {
-                window.location.href = '/dashboard.php';
-            }, 2000);
+    .then(async response => {
+        const text = await response.text();
+        let data;
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch (error) {
+            throw new Error('Сервер повернув некоректну відповідь');
         }
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Не вдалося завершити тренування');
+        }
+
+        showToast('🎉 Тренування завершено!', 'success');
+        setTimeout(() => {
+            window.location.href = '/dashboard.php?page=workouts&status=completed';
+        }, 1200);
     })
-    .catch(error => console.error('Ошибка:', error));
+    .catch(error => {
+        showToast(error.message || 'Помилка з’єднання', 'danger');
+        console.error('Workout complete error:', error);
+    });
 }
 
 // Добавление упражнения в план

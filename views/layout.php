@@ -1,9 +1,16 @@
+<?php
+$nonce = bin2hex(random_bytes(16));
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'nonce-$nonce' https://cdn.jsdelivr.net https://www.youtube.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: https:; frame-src https://www.youtube.com https://www.youtube-nocookie.com; connect-src 'self' wss:; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests");
+header('X-Content-Type-Options: nosniff');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+?>
 <!DOCTYPE html>
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#6C63FF">
+    <link rel="manifest" href="/manifest.webmanifest">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
@@ -324,21 +331,30 @@
     <div id="notificationContainer" class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999;"></div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" nonce="<?php echo $nonce; ?>"></script>
     <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" nonce="<?php echo $nonce; ?>"></script>
     <!-- Custom JS -->
-    <script src="/assets/js/main.js"></script>
-    <script src="/assets/js/mobile.js"></script>
-    <script src="/assets/js/auth.js"></script>
-    <script src="/assets/js/dashboard.js"></script>
-    <script src="/assets/js/notifications.js"></script>
-    <script src="/assets/js/profile.js"></script>
-    <script src="/assets/js/workout.js"></script>
-    <script src="/assets/js/charts.js"></script>
-    <script src="/assets/js/gamification.js"></script>
+    <script src="/assets/js/main.js" nonce="<?php echo $nonce; ?>"></script>
+    <script src="/assets/js/mobile.js" nonce="<?php echo $nonce; ?>"></script>
+    <script src="/assets/js/auth.js" nonce="<?php echo $nonce; ?>"></script>
+    <script src="/assets/js/dashboard.js" nonce="<?php echo $nonce; ?>"></script>
+    <script src="/assets/js/notifications.js" nonce="<?php echo $nonce; ?>"></script>
+    <script src="/assets/js/profile.js" nonce="<?php echo $nonce; ?>"></script>
+    <script src="/assets/js/workout.js" nonce="<?php echo $nonce; ?>"></script>
+    <script src="/assets/js/charts.js" nonce="<?php echo $nonce; ?>"></script>
+    <script src="/assets/js/gamification.js" nonce="<?php echo $nonce; ?>"></script>
 </body>
-<script>
+<script nonce="<?php echo $nonce; ?>">
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js').catch(console.error));
+}
+
+document.querySelectorAll('img:not([loading])').forEach((img) => {
+    img.loading = 'lazy';
+    img.decoding = 'async';
+});
+
 // Проверка непрочитанных сообщений
 function checkUnreadMessages() {
     fetch('/api/chat.php?action=unread')

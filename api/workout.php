@@ -1,9 +1,19 @@
 <?php
+declare(strict_types=1);
+
 require_once __DIR__ . '/../includes/session.php';
+require_once __DIR__ . '/../includes/RateLimiter.php';
 require_once __DIR__ . '/../controllers/WorkoutController.php';
 require_once __DIR__ . '/../controllers/GamificationController.php';
 
 header('Content-Type: application/json');
+
+$rateKey = 'workout-api:' . ($_SESSION['user_id'] ?? ($_SERVER['REMOTE_ADDR'] ?? 'guest'));
+if (!RateLimiter::hit($rateKey, 120, 60)) {
+    http_response_code(429);
+    echo json_encode(['success' => false, 'error' => 'Забагато запитів. Спробуйте пізніше.']);
+    exit;
+}
 
 if (!isLoggedIn()) {
     echo json_encode(['success' => false, 'error' => 'Необхідно авторизуватися']);

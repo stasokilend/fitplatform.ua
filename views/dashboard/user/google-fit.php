@@ -37,7 +37,7 @@ $activityData = $stmt->fetchAll();
             <div class="card-body">
                 <div class="d-flex align-items-center">
                     <?php if (isset($userInfo['picture'])): ?>
-                        <img src="<?php echo htmlspecialchars($userInfo['picture']); ?>" 
+                        <img src="<?php echo htmlspecialchars($userInfo['picture']); ?>" loading="lazy" decoding="async" 
                              alt="Profile" class="rounded-circle me-3" width="64" height="64">
                     <?php else: ?>
                         <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" 

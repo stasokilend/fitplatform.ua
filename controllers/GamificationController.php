@@ -18,13 +18,11 @@ class GamificationController {
      * Загрузка статистики пользователя
      */
     private function loadStats() {
-        // Проверяем наличие записи
         $stmt = $this->pdo->prepare("SELECT * FROM user_gamification_stats WHERE user_id = ?");
         $stmt->execute([$this->userId]);
         $this->stats = $stmt->fetch();
         
         if (!$this->stats) {
-            // Создаем запись
             $stmt = $this->pdo->prepare("
                 INSERT INTO user_gamification_stats (user_id, total_workouts, total_calories)
                 VALUES (?, 0, 0)
@@ -44,13 +42,10 @@ class GamificationController {
         $calories = max(0, (int)round($calories));
         $exercisesCompleted = max(0, (int)$exercisesCompleted);
 
-        // Сначала обновляем серию: ей нужна дата прошлой тренировки,
-        // а не уже записанная сегодняшняя дата.
         if ($isComplete) {
             $this->updateStreak();
         }
 
-        // Обновляем основные показатели
         $stmt = $this->pdo->prepare("
             UPDATE user_gamification_stats 
             SET 
@@ -62,26 +57,19 @@ class GamificationController {
         ");
         $stmt->execute([$isComplete ? 1 : 0, $calories, $exercisesCompleted, $this->userId]);
 
-        // Обновляем локальную статистику перед проверкой достижений.
         $this->loadStats();
         
-        // Обновляем опыт и уровень
         $this->addExperience($exercisesCompleted * 5 + $calories / 10);
-        
-        // Проверяем достижения, которые зависят от накопительной статистики.
-        // Это гарантирует активацию порогов сразу после события, например
-        // `first_workout` после первой завершенной тренировки.
         $this->checkStatMilestoneAchievements();
-        
-        // Обновляем локальную статистику
         $this->loadStats();
     }
     
     /**
-     * Обработка события завершения тренировки: обновляет статистику,
-     * проверяет обычные и специальные достижения и создает уведомления.
+     * Обработка события завершения тренировки
      */
     public function recordWorkoutCompleted($workoutId, $calories, $exercisesCompleted, $totalExercises = null) {
+        $this->ensureGamificationStats();
+        
         $this->updateStats($calories, $exercisesCompleted, true);
 
         $this->checkWorkoutEventAchievements(
@@ -93,22 +81,103 @@ class GamificationController {
         $this->loadStats();
     }
 
-    /**
-     * Ручная синхронизация всех достижений пользователя.
-     * Полезно для API/админских задач и повторной проверки после изменения
-     * правил: не начисляет статистику повторно, только активирует достигнутые
-     * достижения или обновляет прогресс.
-     */
-    public function syncAchievements() {
-        $this->loadStats();
-        $this->checkAchievements();
-        $this->checkLevelAchievements($this->getCurrentLevelNumber());
-        $this->loadStats();
+    private function ensureGamificationStats()
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT user_id
+
+            FROM user_gamification_stats
+
+            WHERE user_id = ?
+        ");
+
+        $stmt->execute([
+            $this->userId
+        ]);
+
+        if (!$stmt->fetch()) {
+
+            $stmt = $this->pdo->prepare("
+                INSERT INTO user_gamification_stats
+
+                (
+                    user_id,
+                    total_workouts,
+                    total_calories,
+                    current_streak,
+                    max_streak,
+                    total_exercises_completed
+                )
+
+                VALUES
+
+                (
+                    ?,
+                    0,
+                    0,
+                    0,
+                    0,
+                    0
+                )
+            ");
+
+            $stmt->execute([
+                $this->userId
+            ]);
+        }
     }
 
     /**
-     * Проверка накопительных достижений по фактическим событиям платформы:
-     * завершение тренировки, серия дней, калории, упражнения и уровень.
+     * Ручная синхронизация ВСЕХ достижений пользователя
+     */
+    public function syncAchievements() {
+        $this->loadStats();
+        
+        // 1. Синхронизируем обычные достижения (workouts, streak, calories, exercises)
+        $this->checkAchievementsByType('workouts', (int)($this->stats['total_workouts'] ?? 0));
+        $this->checkAchievementsByType('streak', (int)($this->stats['current_streak'] ?? 0));
+        $this->checkAchievementsByType('calories', (int)($this->stats['total_calories'] ?? 0));
+        $this->checkAchievementsByType('exercises', (int)($this->stats['total_exercises_completed'] ?? 0));
+        
+        // 2. Синхронизируем достижения по уровню
+        $this->checkLevelAchievements($this->getCurrentLevelNumber());
+        
+        // 3. Синхронизируем СПЕЦИАЛЬНЫЕ достижения
+        $this->syncSpecialAchievements();
+        
+        $this->loadStats();
+        
+        return $this->getGamificationStats();
+    }
+
+    /**
+     * Синхронизация специальных достижений
+     */
+    private function syncSpecialAchievements() {
+        // first_workout - первая тренировка
+        if (($this->stats['total_workouts'] ?? 0) >= 1) {
+            $this->unlockAchievement('first_workout');
+        }
+        
+        // perfect_workout - идеальная тренировка (все упражнения выполнены)
+        $fullWorkouts = $this->getFullyCompletedWorkoutsCount();
+        if ($fullWorkouts >= 1) {
+            $this->unlockAchievement('perfect_workout');
+        }
+        
+        // consistency - 10 идеальных тренировок
+        if ($fullWorkouts >= 10) {
+            $this->unlockAchievement('consistency');
+        } else {
+            $this->updateProgress('consistency', $fullWorkouts);
+        }
+        
+        // early_bird и night_owl не могут быть проверены постфактум без логов времени
+        // Они активируются только во время реальной тренировки
+    }
+
+    /**
+     * Проверка накопительных достижений
      */
     private function checkStatMilestoneAchievements() {
         $this->checkAchievementsByType('workouts', (int)($this->stats['total_workouts'] ?? 0));
@@ -119,11 +188,11 @@ class GamificationController {
     }
 
     /**
-     * Проверка всех достижений одного типа с обновлением прогресса.
+     * Проверка всех достижений одного типа
      */
     private function checkAchievementsByType($requirementType, $currentProgress) {
         $stmt = $this->pdo->prepare("
-            SELECT code, requirement_value
+            SELECT id, code, requirement_value
             FROM achievements
             WHERE is_active = 1 AND requirement_type = ?
             ORDER BY requirement_value ASC
@@ -140,7 +209,7 @@ class GamificationController {
     }
 
     /**
-     * Проверка достижений, которые зависят от конкретного события тренировки.
+     * Проверка достижений, зависящих от события тренировки
      */
     private function checkWorkoutEventAchievements($workoutId, $exercisesCompleted, $totalExercises = null) {
         $hour = (int)date('G');
@@ -165,6 +234,9 @@ class GamificationController {
 
         if ($totalExercises > 0 && $exercisesCompleted >= $totalExercises) {
             $this->unlockAchievement('perfect_workout');
+            $this->updateProgress('perfect_workout', $totalExercises);
+        } else {
+            $this->updateProgress('perfect_workout', $exercisesCompleted);
         }
 
         $fullWorkouts = $this->getFullyCompletedWorkoutsCount();
@@ -176,7 +248,7 @@ class GamificationController {
     }
 
     /**
-     * Количество тренировок пользователя, в которых выполнены все упражнения.
+     * Количество идеальных тренировок пользователя
      */
     private function getFullyCompletedWorkoutsCount() {
         $stmt = $this->pdo->prepare("
@@ -204,31 +276,27 @@ class GamificationController {
         $today = date('Y-m-d');
         
         if ($lastDate === $today) {
-            // Уже тренировался сегодня
             return;
         }
         
         $yesterday = date('Y-m-d', strtotime('-1 day'));
         
         if ($lastDate === $yesterday) {
-            // Продолжаем серию
             $newStreak = $this->stats['current_streak'] + 1;
         } else {
-            // Начинаем новую серию
             $newStreak = 1;
         }
         
-        // Обновляем максимальную серию
-        $maxStreak = max($newStreak, $this->stats['max_streak']);
+        $maxStreak = max($newStreak, $this->stats['longest_streak']);
         
         $stmt = $this->pdo->prepare("
             UPDATE user_gamification_stats 
-            SET current_streak = ?, max_streak = ?
+            SET current_streak = ?, longest_streak = ?
             WHERE user_id = ?
         ");
         $stmt->execute([$newStreak, $maxStreak, $this->userId]);
         $this->stats['current_streak'] = $newStreak;
-        $this->stats['max_streak'] = $maxStreak;
+        $this->stats['longest_streak'] = $maxStreak;
     }
     
     /**
@@ -256,7 +324,6 @@ class GamificationController {
         $newLevel = $level['level'];
         $nextLevelExp = $level['next_level_experience'];
         
-        // Проверяем повышение уровня
         while ($newExp >= $nextLevelExp) {
             $newExp -= $nextLevelExp;
             $newLevel++;
@@ -274,7 +341,6 @@ class GamificationController {
         ");
         $stmt->execute([$newLevel, $newExp, $nextLevelExp, $newTotalExp, $this->userId]);
         
-        // Проверяем достижения по уровню
         $this->checkLevelAchievements($newLevel);
     }
     
@@ -298,7 +364,7 @@ class GamificationController {
     }
 
     /**
-     * Текущий уровень пользователя без создания лишних побочных эффектов.
+     * Текущий уровень пользователя
      */
     private function getCurrentLevelNumber() {
         $stmt = $this->pdo->prepare("SELECT level FROM user_levels WHERE user_id = ?");
@@ -306,80 +372,6 @@ class GamificationController {
         $level = $stmt->fetch();
 
         return $level ? (int)$level['level'] : 1;
-    }
-    
-    /**
-     * Проверка всех достижений
-     */
-    public function checkAchievements() {
-        // Получаем все активные достижения
-        $stmt = $this->pdo->query("
-            SELECT * FROM achievements WHERE is_active = 1
-        ");
-        $achievements = $stmt->fetchAll();
-        
-        foreach ($achievements as $achievement) {
-            $this->checkAchievement($achievement);
-        }
-    }
-    
-    /**
-     * Проверка конкретного достижения
-     */
-    private function checkAchievement($achievement) {
-        $current = $this->getCurrentProgress($achievement);
-        
-        if ($current >= $achievement['requirement_value']) {
-            $this->unlockAchievement($achievement['code']);
-        } else {
-            // Обновляем прогресс
-            $this->updateProgress($achievement['code'], $current);
-        }
-    }
-    /**
- * Получение достижений по категориям
- */
-public function getAchievementsByCategory() {
-    $achievements = $this->getUserAchievements();
-    $categories = [];
-    
-    foreach ($achievements as $ach) {
-        $cat = $ach['category'] ?? 'other';
-        if (!isset($categories[$cat])) {
-            $categories[$cat] = [];
-        }
-        $categories[$cat][] = $ach;
-    }
-    
-    return $categories;
-}
-    
-    /**
-     * Получение текущего прогресса для достижения
-     */
-    private function getCurrentProgress($achievement) {
-        $type = $achievement['requirement_type'];
-        
-        switch ($type) {
-            case 'workouts':
-                return $this->stats['total_workouts'] ?? 0;
-            case 'streak':
-                return $this->stats['current_streak'] ?? 0;
-            case 'calories':
-                return $this->stats['total_calories'] ?? 0;
-            case 'exercises':
-                return $this->stats['total_exercises_completed'] ?? 0;
-            case 'special':
-                if (($achievement['code'] ?? '') === 'consistency') {
-                    return $this->getFullyCompletedWorkoutsCount();
-                }
-                if (preg_match('/^level_(\d+)$/', $achievement['code'] ?? '', $matches)) {
-                    return $this->getCurrentLevelNumber();
-                }
-                return 0;
-            default:
-                return 0;
-        }
     }
     
     /**
@@ -405,47 +397,136 @@ public function getAchievementsByCategory() {
     /**
      * Разблокировка достижения
      */
-    public function unlockAchievement($achievementCode) {
-        // Проверяем, не разблокировано ли уже
+    public function unlockAchievement($achievementCode)
+    {
+        // Уже открыто
+
         $stmt = $this->pdo->prepare("
-            SELECT id FROM user_achievements ua
-            JOIN achievements a ON ua.achievement_id = a.id
-            WHERE ua.user_id = ? AND a.code = ? AND ua.is_completed = 1
+            SELECT ua.id
+
+            FROM user_achievements ua
+
+            JOIN achievements a
+            ON a.id = ua.achievement_id
+
+            WHERE ua.user_id = ?
+
+            AND a.code = ?
+
+            AND ua.is_completed = 1
         ");
-        $stmt->execute([$this->userId, $achievementCode]);
+
+        $stmt->execute([
+            $this->userId,
+            $achievementCode
+        ]);
+
         if ($stmt->fetch()) {
             return false;
         }
-        
-        // Получаем ID достижения
-        $stmt = $this->pdo->prepare("SELECT id, code, name, description, icon, points, requirement_value FROM achievements WHERE code = ?");
-        $stmt->execute([$achievementCode]);
+
+        // Получаем достижение
+
+        $stmt = $this->pdo->prepare("
+            SELECT *
+
+            FROM achievements
+
+            WHERE code = ?
+
+            AND is_active = 1
+        ");
+
+        $stmt->execute([
+            $achievementCode
+        ]);
+
         $achievement = $stmt->fetch();
-        
+
         if (!$achievement) {
             return false;
         }
-        
-        // Добавляем или обновляем запись
-        $stmt = $this->pdo->prepare("
-            INSERT INTO user_achievements (user_id, achievement_id, is_completed, progress)
-            VALUES (?, ?, 1, ?)
-            ON DUPLICATE KEY UPDATE is_completed = 1, progress = ?, unlocked_at = NOW()
-        ");
-        $progress = max((int)$achievement['requirement_value'], (int)$achievement['points']);
-        $stmt->execute([$this->userId, $achievement['id'], $progress, $progress]);
-        
-        // Добавляем опыт за достижение
-        $this->addExperience($achievement['points'] * 2);
 
-        $this->notifyAchievementUnlocked($achievement);
-        
+        // Если запись уже существует
+
+        $stmt = $this->pdo->prepare("
+            SELECT id
+
+            FROM user_achievements
+
+            WHERE user_id = ?
+
+            AND achievement_id = ?
+        ");
+
+        $stmt->execute([
+            $this->userId,
+            $achievement['id']
+        ]);
+
+        $existing = $stmt->fetch();
+
+        if ($existing) {
+
+            $stmt = $this->pdo->prepare("
+                UPDATE user_achievements
+
+                SET
+
+                is_completed = 1,
+
+                progress = ?,
+
+                unlocked_at = NOW()
+
+                WHERE id = ?
+            ");
+
+            $stmt->execute([
+                $achievement['requirement_value'],
+                $existing['id']
+            ]);
+
+        } else {
+
+            $stmt = $this->pdo->prepare("
+                INSERT INTO user_achievements
+
+                (
+                    user_id,
+                    achievement_id,
+                    progress,
+                    is_completed,
+                    unlocked_at
+                )
+
+                VALUES
+
+                (
+                    ?,
+                    ?,
+                    ?,
+                    1,
+                    NOW()
+                )
+            ");
+
+            $stmt->execute([
+                $this->userId,
+                $achievement['id'],
+                $achievement['requirement_value']
+            ]);
+        }
+
+        $this->notifyAchievementUnlocked(
+            $achievement
+        );
+
         return true;
     }
     
-
     /**
-     * Уведомление о новом достижении.
+     * Уведомление о новом достижении
      */
     private function notifyAchievementUnlocked($achievement) {
         $notification = new NotificationController($this->userId);
@@ -458,7 +539,7 @@ public function getAchievementsByCategory() {
         if (!$created) {
             $notification->create(
                 'achievement',
-                'Нове досягнення!',
+                'Нове досягнення! 🏆',
                 'Ви отримали досягнення «' . $achievement['name'] . '» та +' . (int)$achievement['points'] . ' балів.',
                 $achievement['icon'] ?: 'bi-trophy',
                 '/dashboard.php?page=achievements'
@@ -473,16 +554,35 @@ public function getAchievementsByCategory() {
         $stmt = $this->pdo->prepare("
             SELECT 
                 a.*,
-                ua.is_completed,
+                COALESCE(ua.is_completed, 0) as is_completed,
                 ua.unlocked_at,
-                ua.progress,
+                COALESCE(ua.progress, 0) as progress,
                 CASE WHEN ua.is_completed = 1 THEN ua.progress ELSE 0 END as points_earned
             FROM achievements a
             LEFT JOIN user_achievements ua ON a.id = ua.achievement_id AND ua.user_id = ?
+            WHERE a.is_active = 1
             ORDER BY ua.is_completed DESC, a.category, a.order_num ASC, a.requirement_value ASC
         ");
         $stmt->execute([$this->userId]);
         return $stmt->fetchAll();
+    }
+    
+    /**
+     * Получение достижений по категориям
+     */
+    public function getAchievementsByCategory() {
+        $achievements = $this->getUserAchievements();
+        $categories = [];
+        
+        foreach ($achievements as $ach) {
+            $cat = $ach['category'] ?? 'other';
+            if (!isset($categories[$cat])) {
+                $categories[$cat] = [];
+            }
+            $categories[$cat][] = $ach;
+        }
+        
+        return $categories;
     }
     
     /**
@@ -536,68 +636,66 @@ public function getAchievementsByCategory() {
             'total_points' => $totalPoints,
             'completion_percent' => $total > 0 ? round(($completed / $total) * 100) : 0,
             'streak' => $this->stats['current_streak'] ?? 0,
-            'max_streak' => $this->stats['max_streak'] ?? 0,
+            'longest_streak' => $this->stats['longest_streak'] ?? 0,
             'total_workouts' => $this->stats['total_workouts'] ?? 0,
             'total_calories' => $this->stats['total_calories'] ?? 0
         ];
     }
     
-/**
- * Получение последних разблокированных достижений с деталями
- */
-public function getRecentAchievements($limit = 5) {
-    $limit = (int)$limit;
-    
-    $stmt = $this->pdo->prepare("
-        SELECT 
-            a.*,
-            ua.unlocked_at,
-            ua.progress,
-            ua.is_completed
-        FROM user_achievements ua
-        JOIN achievements a ON ua.achievement_id = a.id
-        WHERE ua.user_id = ? AND ua.is_completed = 1
-        ORDER BY ua.unlocked_at DESC
-        LIMIT " . $limit . "
-    ");
-    $stmt->execute([$this->userId]);
-    return $stmt->fetchAll();
-}
     /**
- * Получение статистики достижений для дашборда
- */
-public function getAchievementSummary() {
-    $achievements = $this->getUserAchievements();
-    
-    $total = count($achievements);
-    $completed = 0;
-    $byRarity = [
-        'common' => ['total' => 0, 'completed' => 0],
-        'uncommon' => ['total' => 0, 'completed' => 0],
-        'rare' => ['total' => 0, 'completed' => 0],
-        'epic' => ['total' => 0, 'completed' => 0],
-        'legendary' => ['total' => 0, 'completed' => 0]
-    ];
-    
-    foreach ($achievements as $ach) {
-        $rarity = $ach['rarity'] ?? 'common';
-        if (isset($byRarity[$rarity])) {
-            $byRarity[$rarity]['total']++;
-            if ($ach['is_completed']) {
-                $byRarity[$rarity]['completed']++;
-                $completed++;
-            }
-        }
+     * Получение последних разблокированных достижений
+     */
+    public function getRecentAchievements($limit = 5) {
+        $limit = (int)$limit;
+        
+        $stmt = $this->pdo->prepare("
+            SELECT 
+                a.*,
+                ua.unlocked_at,
+                ua.progress,
+                ua.is_completed
+            FROM user_achievements ua
+            JOIN achievements a ON ua.achievement_id = a.id
+            WHERE ua.user_id = ? AND ua.is_completed = 1
+            ORDER BY ua.unlocked_at DESC
+            LIMIT " . $limit . "
+        ");
+        $stmt->execute([$this->userId]);
+        return $stmt->fetchAll();
     }
     
-    return [
-        'total' => $total,
-        'completed' => $completed,
-        'by_rarity' => $byRarity,
-        'completion_percent' => $total > 0 ? round(($completed / $total) * 100) : 0
-    ];
-
-}   
-
+    /**
+     * Получение сводной статистики достижений
+     */
+    public function getAchievementSummary() {
+        $achievements = $this->getUserAchievements();
+        
+        $total = count($achievements);
+        $completed = 0;
+        $byRarity = [
+            'common' => ['total' => 0, 'completed' => 0],
+            'uncommon' => ['total' => 0, 'completed' => 0],
+            'rare' => ['total' => 0, 'completed' => 0],
+            'epic' => ['total' => 0, 'completed' => 0],
+            'legendary' => ['total' => 0, 'completed' => 0]
+        ];
+        
+        foreach ($achievements as $ach) {
+            $rarity = $ach['rarity'] ?? 'common';
+            if (isset($byRarity[$rarity])) {
+                $byRarity[$rarity]['total']++;
+                if ($ach['is_completed']) {
+                    $byRarity[$rarity]['completed']++;
+                    $completed++;
+                }
+            }
+        }
+        
+        return [
+            'total' => $total,
+            'completed' => $completed,
+            'by_rarity' => $byRarity,
+            'completion_percent' => $total > 0 ? round(($completed / $total) * 100) : 0
+        ];
+    }
 }
-?>

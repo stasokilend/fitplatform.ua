@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Хост: MySQL-8.4:3306
--- Время создания: Июн 22 2026 г., 11:43
+-- Время создания: Июн 23 2026 г., 19:39
 -- Версия сервера: 8.4.8
 -- Версия PHP: 8.5.4
 
@@ -69,12 +69,7 @@ INSERT INTO `achievements` (`id`, `code`, `name`, `description`, `icon`, `catego
 (16, 'early_bird', 'Рання пташка', 'Виконайте тренування до 7:00', 'bi-sunrise', 'special', 'special', 1, 15, 'bronze', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0),
 (17, 'night_owl', 'Нічна сова', 'Виконайте тренування після 22:00', 'bi-moon', 'special', 'special', 1, 15, 'bronze', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0),
 (18, 'perfect_workout', 'Ідеальне тренування', 'Виконайте всі вправи тренування', 'bi-check-circle', 'special', 'special', 1, 20, 'gold', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0),
-(19, 'consistency', 'Послідовність', 'Повністю виконайте 10 тренувань', 'bi-award', 'special', 'special', 10, 30, 'silver', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0),
-(20, 'level_5', 'Рівень 5', 'Досягніть 5 рівня', 'bi-graph-up-arrow', 'special', 'special', 5, 15, 'bronze', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0),
-(21, 'level_10', 'Рівень 10', 'Досягніть 10 рівня', 'bi-graph-up-arrow', 'special', 'special', 10, 30, 'silver', 1, '2026-06-19 21:57:38', NULL, 'uncommon', 'bi-trophy', 0),
-(22, 'level_25', 'Рівень 25', 'Досягніть 25 рівня', 'bi-graph-up-arrow', 'special', 'special', 25, 60, 'gold', 1, '2026-06-19 21:57:38', NULL, 'rare', 'bi-trophy', 0),
-(23, 'level_50', 'Рівень 50', 'Досягніть 50 рівня', 'bi-graph-up-arrow', 'special', 'special', 50, 100, 'platinum', 1, '2026-06-19 21:57:38', NULL, 'epic', 'bi-trophy', 0),
-(24, 'level_100', 'Рівень 100', 'Досягніть 100 рівня', 'bi-gem', 'special', 'special', 100, 200, 'platinum', 1, '2026-06-19 21:57:38', NULL, 'legendary', 'bi-trophy', 0);
+(19, 'consistency', 'Послідовність', 'Повністю виконайте 10 тренувань', 'bi-award', 'special', 'special', 10, 30, 'silver', 1, '2026-06-19 21:57:38', NULL, 'common', 'bi-trophy', 0);
 
 -- --------------------------------------------------------
 
@@ -90,13 +85,6 @@ CREATE TABLE `chats` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
---
--- Дамп данных таблицы `chats`
---
-
-INSERT INTO `chats` (`id`, `user1_id`, `user2_id`, `created_at`, `updated_at`) VALUES
-(1, 7, 3, '2026-06-20 13:47:00', '2026-06-20 17:19:29');
-
 -- --------------------------------------------------------
 
 --
@@ -111,15 +99,6 @@ CREATE TABLE `chat_messages` (
   `is_read` tinyint(1) DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Дамп данных таблицы `chat_messages`
---
-
-INSERT INTO `chat_messages` (`id`, `chat_id`, `sender_id`, `message`, `is_read`, `created_at`) VALUES
-(1, 1, 7, 'hhh', 1, '2026-06-20 13:50:20'),
-(2, 1, 3, 'asdasdasd', 1, '2026-06-20 13:50:50'),
-(3, 1, 3, 'https://fitplatform.ua/dashboard.php?page=program-detail&id=3', 1, '2026-06-20 17:19:29');
 
 -- --------------------------------------------------------
 
@@ -244,7 +223,7 @@ INSERT INTO `medical_restrictions` (`id`, `name`, `icon`) VALUES
 --
 
 CREATE TABLE `notifications` (
-  `id` int NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL,
   `user_id` int NOT NULL,
   `type` varchar(50) DEFAULT 'info',
   `title` varchar(150) NOT NULL,
@@ -252,9 +231,7 @@ CREATE TABLE `notifications` (
   `icon` varchar(50) DEFAULT 'bi-bell',
   `link` varchar(255) DEFAULT NULL,
   `is_read` tinyint(1) DEFAULT '0',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_notifications_user_read` (`user_id`,`is_read`,`created_at`)
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
@@ -264,25 +241,23 @@ CREATE TABLE `notifications` (
 --
 
 CREATE TABLE `notification_templates` (
-  `id` int NOT NULL AUTO_INCREMENT,
+  `id` int NOT NULL,
   `code` varchar(80) NOT NULL,
   `type` varchar(50) DEFAULT 'info',
   `title` varchar(150) NOT NULL,
   `message` text NOT NULL,
   `icon` varchar(50) DEFAULT 'bi-bell',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `code` (`code`)
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Дамп данных таблицы `notification_templates`
 --
 
-INSERT INTO `notification_templates` (`code`, `type`, `title`, `message`, `icon`) VALUES
-('achievement_unlocked', 'achievement', 'Нове досягнення!', 'Ви отримали досягнення «{achievement_name}» та +{points} балів.', 'bi-trophy'),
-('workout_completed', 'success', 'Тренування завершено', 'Ви завершили «{workout_name}» і спалили {calories} ккал.', 'bi-check-circle'),
-('trainer_new_program', 'info', 'Нова програма від тренера', '{trainer_name} опублікував(ла) нову програму «{program_name}».', 'bi-file-earmark-plus');
+INSERT INTO `notification_templates` (`id`, `code`, `type`, `title`, `message`, `icon`, `created_at`) VALUES
+(1, 'achievement_unlocked', 'achievement', 'Нове досягнення!', 'Ви отримали досягнення «{achievement_name}» та +{points} балів.', 'bi-trophy', '2026-06-23 13:55:43'),
+(2, 'workout_completed', 'success', 'Тренування завершено', 'Ви завершили «{workout_name}» і спалили {calories} ккал.', 'bi-check-circle', '2026-06-23 13:55:43'),
+(6, 'trainer_new_program', 'info', 'Нова програма від тренера', '{trainer_name} опублікував(ла) нову програму «{program_name}».', 'bi-file-earmark-plus', '2026-06-23 14:11:38');
 
 -- --------------------------------------------------------
 
@@ -358,11 +333,25 @@ INSERT INTO `plan_exercises` (`id`, `plan_id`, `exercise_id`, `sets`, `reps`, `w
 (46, 9, 4, 3, 10, NULL, 60, NULL, 3, 0, NULL, NULL),
 (47, 9, 1, 3, 10, NULL, 60, NULL, 4, 0, NULL, NULL),
 (48, 9, 6, 3, 10, NULL, 60, NULL, 5, 0, NULL, NULL),
-(49, 10, 5, 3, 6, NULL, 60, NULL, 0, 0, NULL, NULL),
-(50, 10, 2, 3, 10, NULL, 60, NULL, 1, 0, NULL, NULL),
-(51, 10, 3, 3, 10, NULL, 60, NULL, 2, 0, NULL, NULL),
-(52, 10, 4, 3, 10, NULL, 60, NULL, 3, 0, NULL, NULL),
-(53, 10, 1, 3, 10, NULL, 60, NULL, 4, 0, NULL, NULL);
+(49, 10, 5, 3, 6, NULL, 60, NULL, 0, 1, NULL, NULL),
+(50, 10, 2, 3, 10, NULL, 60, NULL, 1, 1, NULL, NULL),
+(51, 10, 3, 3, 10, NULL, 60, NULL, 2, 1, NULL, NULL),
+(52, 10, 4, 3, 10, NULL, 60, NULL, 3, 1, NULL, NULL),
+(53, 10, 1, 3, 10, NULL, 60, NULL, 4, 1, NULL, NULL),
+(54, 11, 5, 3, 6, NULL, 60, NULL, 0, 1, NULL, NULL),
+(55, 11, 2, 3, 10, NULL, 60, NULL, 1, 1, NULL, NULL),
+(56, 11, 3, 3, 10, NULL, 60, NULL, 2, 1, NULL, NULL),
+(57, 11, 4, 3, 10, NULL, 60, NULL, 3, 1, NULL, NULL),
+(58, 11, 6, 3, 10, NULL, 60, NULL, 4, 1, NULL, NULL),
+(71, 14, 5, 3, 6, NULL, 60, NULL, 0, 1, NULL, NULL),
+(72, 14, 2, 3, 10, NULL, 60, NULL, 1, 1, NULL, NULL),
+(73, 14, 3, 3, 10, NULL, 60, NULL, 2, 1, NULL, NULL),
+(74, 14, 4, 3, 10, NULL, 60, NULL, 3, 1, NULL, NULL),
+(75, 14, 1, 3, 10, NULL, 60, NULL, 4, 1, NULL, NULL),
+(76, 14, 6, 3, 10, NULL, 60, NULL, 5, 1, NULL, NULL),
+(86, 17, 1, 3, 12, NULL, 60, NULL, 1, 1, NULL, NULL),
+(87, 17, 2, 3, 10, NULL, 60, NULL, 2, 1, NULL, NULL),
+(88, 17, 3, 3, 1, NULL, 60, NULL, 3, 1, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -390,7 +379,11 @@ INSERT INTO `program_exercises` (`id`, `program_id`, `exercise_id`, `day`, `sets
 (1, 2, 4, 1, 3, 10, 60, NULL, 0),
 (15, 3, 4, 1, 3, 10, 60, '', 0),
 (16, 3, 6, 1, 3, 10, 60, '', 1),
-(17, 3, 5, 3, 3, 10, 60, '', 2);
+(17, 3, 5, 3, 3, 10, 60, '', 2),
+(18, 4, 6, 1, 3, 10, 60, NULL, 0),
+(19, 5, 2, 1, 3, 10, 60, NULL, 0),
+(20, 6, 4, 1, 3, 10, 60, NULL, 0),
+(21, 6, 1, 1, 3, 10, 60, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -469,19 +462,6 @@ INSERT INTO `template_exercises` (`id`, `template_id`, `exercise_id`, `sets`, `r
 -- --------------------------------------------------------
 
 --
--- Структура таблицы `trainer_subscriptions`
---
-
-CREATE TABLE `trainer_subscriptions` (
-  `id` int NOT NULL,
-  `user_id` int NOT NULL,
-  `trainer_id` int NOT NULL,
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
--- --------------------------------------------------------
-
---
 -- Структура таблицы `trainer_clients`
 --
 
@@ -547,7 +527,10 @@ CREATE TABLE `trainer_programs` (
 
 INSERT INTO `trainer_programs` (`id`, `trainer_id`, `name`, `description`, `difficulty`, `duration_weeks`, `sessions_per_week`, `is_public`, `is_active`, `created_at`, `updated_at`, `content`, `cover_image`, `video_url`, `duration_minutes`, `category`, `views`, `likes`, `is_featured`) VALUES
 (2, 3, 'фывыфв', 'фывфывфывфыв', 'intermediate', 4, 3, 1, 1, '2026-06-20 14:45:44', '2026-06-20 14:45:44', NULL, NULL, NULL, 0, 'general', 0, 0, 0),
-(3, 3, 'фывыфв', '<p><iframe style=\"width: 350px; height: 197px;\" title=\"YouTube video player\" src=\"https://www.youtube.com/embed/VFVOJMJMqpE?si=Px8lYCETaF1RaSi-\" width=\"350\" height=\"197\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" allowfullscreen=\"allowfullscreen\"></iframe></p>', 'intermediate', 4, 3, 1, 1, '2026-06-20 15:02:30', '2026-06-20 15:02:30', NULL, NULL, NULL, 0, 'general', 0, 0, 0);
+(3, 3, 'фывыфв', '<p><iframe style=\"width: 350px; height: 197px;\" title=\"YouTube video player\" src=\"https://www.youtube.com/embed/VFVOJMJMqpE?si=Px8lYCETaF1RaSi-\" width=\"350\" height=\"197\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" allowfullscreen=\"allowfullscreen\"></iframe></p>', 'intermediate', 4, 3, 1, 1, '2026-06-20 15:02:30', '2026-06-20 15:02:30', NULL, NULL, NULL, 0, 'general', 0, 0, 0),
+(4, 1, 'asdsadsadsad', '<p><span style=\"background-color: rgb(0, 0, 0);\">asdasdasdasdasdasd</span></p>', 'intermediate', 4, 3, 1, 1, '2026-06-23 14:08:02', '2026-06-23 14:08:02', NULL, NULL, NULL, 0, 'general', 0, 0, 0),
+(5, 1, 'asdsadasdsad', '<p>asdsadasdasdasd</p>', 'intermediate', 4, 3, 1, 1, '2026-06-23 14:08:32', '2026-06-23 14:08:32', NULL, NULL, NULL, 0, 'general', 0, 0, 0),
+(6, 1, 'trytrytry', '<p>rtytyrytryerty</p>', 'intermediate', 4, 3, 1, 1, '2026-06-23 15:31:21', '2026-06-23 15:31:21', NULL, NULL, NULL, 0, 'general', 0, 0, 0);
 
 -- --------------------------------------------------------
 
@@ -567,6 +550,34 @@ CREATE TABLE `trainer_schedule` (
   `status` enum('available','booked','completed','cancelled') DEFAULT 'available',
   `notes` text
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Дамп данных таблицы `trainer_schedule`
+--
+
+INSERT INTO `trainer_schedule` (`id`, `trainer_id`, `client_id`, `day_of_week`, `start_time`, `end_time`, `is_recurring`, `date`, `status`, `notes`) VALUES
+(2, 1, NULL, 'wednesday', '07:00:00', '08:00:00', 1, '2026-06-28', 'booked', ''),
+(3, 1, NULL, 'monday', '09:00:00', '10:00:00', 1, '2026-06-23', 'available', '');
+
+-- --------------------------------------------------------
+
+--
+-- Структура таблицы `trainer_subscriptions`
+--
+
+CREATE TABLE `trainer_subscriptions` (
+  `id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `trainer_id` int NOT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Дамп данных таблицы `trainer_subscriptions`
+--
+
+INSERT INTO `trainer_subscriptions` (`id`, `user_id`, `trainer_id`, `created_at`) VALUES
+(26, 8, 1, '2026-06-23 17:18:40');
 
 -- --------------------------------------------------------
 
@@ -595,11 +606,10 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `email`, `password_hash`, `full_name`, `role`, `is_active`, `created_at`, `updated_at`, `specialty`, `experience_years`, `bio`, `avatar_url`, `is_verified`) VALUES
-(1, 'stasokilend@gmail.com', '$2y$12$TGh6k0AKLayXdOTQmUTrTe/ekig0mEUrWg8pEzRwpqICN7TK0hti.', 'stanislav', 'admin', 1, '2026-06-19 19:49:08', '2026-06-19 20:30:04', NULL, 0, NULL, NULL, 0),
+(1, 'stasokilend@gmail.com', '$2y$12$TGh6k0AKLayXdOTQmUTrTe/ekig0mEUrWg8pEzRwpqICN7TK0hti.', 'stanislav', 'trainer', 1, '2026-06-19 19:49:08', '2026-06-23 14:00:58', NULL, 0, NULL, NULL, 0),
 (2, 'admin@fitplatform.ua', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Адміністратор', 'admin', 1, '2026-06-19 20:33:16', '2026-06-19 20:33:16', NULL, 0, NULL, NULL, 0),
 (3, 'staso@gmail.com', '$2y$12$y8XbJvaAENGFnDwMXfC9cujLhfqgq1404cytTVT9XjEUtAkKVD/Sy', 'stasik', 'trainer', 1, '2026-06-19 20:42:34', '2026-06-20 14:38:02', NULL, 0, NULL, NULL, 0),
-(5, 'trainer@fitplatform.ua', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Олексій Тренер', 'trainer', 1, '2026-06-20 07:18:17', '2026-06-20 07:18:17', 'Силові тренування, Функціональний фітнес', 5, NULL, NULL, 1),
-(7, 'brutal@rw.com', '$2y$12$kwDSr8ySMoYG0TUix01RBe6bEeCmlddHlQVOgl1WdG4LnB.UxFGOu', 'brutal', 'user', 1, '2026-06-20 10:57:48', '2026-06-20 13:46:25', NULL, 0, NULL, NULL, 0);
+(8, 'brutal@rw.com', '$2y$12$u8cnIBIjge5e9HAN/WvNZu.14/aqpK1WEFdQqkhBV9QiTs55SOiHy', 'brutal', 'user', 1, '2026-06-23 16:37:01', '2026-06-23 16:37:01', NULL, 0, NULL, NULL, 0);
 
 -- --------------------------------------------------------
 
@@ -657,9 +667,7 @@ CREATE TABLE `user_gamification_stats` (
 --
 
 INSERT INTO `user_gamification_stats` (`user_id`, `total_workouts`, `total_calories`, `current_streak`, `max_streak`, `total_exercises_completed`, `last_workout_date`, `updated_at`) VALUES
-(1, 0, 0, 0, 0, 0, NULL, '2026-06-19 22:42:25'),
-(3, 0, 0, 0, 0, 0, NULL, '2026-06-19 21:57:40'),
-(7, 1, 0, 1, 1, 5, '2026-06-20', '2026-06-20 11:39:14');
+(8, 0, 0, 0, 0, 0, NULL, '2026-06-23 17:38:16');
 
 -- --------------------------------------------------------
 
@@ -698,7 +706,9 @@ CREATE TABLE `user_levels` (
 INSERT INTO `user_levels` (`user_id`, `level`, `experience`, `next_level_experience`, `total_experience`, `updated_at`) VALUES
 (1, 1, 0, 100, 0, '2026-06-19 22:42:25'),
 (3, 1, 0, 100, 0, '2026-06-19 21:57:40'),
-(7, 1, 25, 100, 25, '2026-06-20 11:39:14');
+(7, 2, 40, 130, 140, '2026-06-23 16:34:43'),
+(8, 1, 45, 100, 45, '2026-06-23 17:16:57'),
+(9, 1, 25, 100, 25, '2026-06-23 14:16:52');
 
 -- --------------------------------------------------------
 
@@ -728,7 +738,9 @@ CREATE TABLE `user_profiles` (
 INSERT INTO `user_profiles` (`user_id`, `age`, `weight`, `height`, `gender`, `fitness_level`, `goal_type`, `target_weight`, `medical_notes`, `profile_completed`, `updated_at`, `goal_weights`) VALUES
 (1, 22, 80.40, 179, 'male', 'beginner', 'health', NULL, '', 1, '2026-06-20 17:22:19', '{\"health\": 1.0, \"endurance\": 0.0, \"muscle_gain\": 0.0, \"weight_loss\": 0.0}'),
 (3, 22, 80.00, 169, 'male', 'intermediate', 'health', NULL, '', 1, '2026-06-20 17:22:19', '{\"health\": 1.0, \"endurance\": 0.0, \"muscle_gain\": 0.0, \"weight_loss\": 0.0}'),
-(7, 22, 90.00, 170, 'male', 'beginner', 'muscle_gain', NULL, '', 1, '2026-06-20 17:22:19', '{\"health\": 0.0, \"endurance\": 0.0, \"muscle_gain\": 1.0, \"weight_loss\": 0.0}');
+(7, 23, 90.00, 170, 'male', 'beginner', 'muscle_gain', NULL, '', 1, '2026-06-23 15:46:42', '{\"health\": 0.0, \"endurance\": 0.0, \"muscle_gain\": 1.0, \"weight_loss\": 0.0}'),
+(8, 22, 80.00, 178, 'male', 'intermediate', 'muscle_gain', NULL, '', 1, '2026-06-23 16:37:18', NULL),
+(9, 22, 80.00, 178, 'male', 'intermediate', 'health', NULL, '', 1, '2026-06-23 15:27:19', NULL);
 
 -- --------------------------------------------------------
 
@@ -822,7 +834,10 @@ INSERT INTO `workout_plans` (`id`, `user_id`, `trainer_id`, `name`, `description
 (7, 7, NULL, 'Моє тренування 20.06.2026', NULL, 10.0, 'intermediate', 'general', 0, 'planned', NULL, '2026-06-20 17:33:29', '2026-06-20 17:33:29', NULL, 0, NULL),
 (8, 7, NULL, 'Моє тренування 20.06.2026', NULL, 10.0, 'intermediate', 'general', 0, 'planned', NULL, '2026-06-20 17:33:30', '2026-06-20 17:33:30', NULL, 0, NULL),
 (9, 7, NULL, 'Моє тренування 20.06.2026', NULL, 14.4, 'intermediate', 'general', 0, 'planned', NULL, '2026-06-20 17:33:32', '2026-06-20 17:33:32', NULL, 0, NULL),
-(10, 7, NULL, 'Моє тренування 20.06.2026', NULL, 10.0, 'intermediate', 'general', 0, 'planned', NULL, '2026-06-20 17:33:34', '2026-06-20 17:33:34', NULL, 0, NULL);
+(10, 7, NULL, 'Моє тренування 20.06.2026', NULL, 10.0, 'intermediate', 'general', 0, 'completed', NULL, '2026-06-20 17:33:34', '2026-06-23 16:34:43', '2026-06-23 18:34:43', 0, NULL),
+(11, 9, NULL, 'Моє тренування 23.06.2026', NULL, 10.0, 'intermediate', 'general', 0, 'completed', NULL, '2026-06-23 14:16:40', '2026-06-23 14:16:52', '2026-06-23 16:16:52', 0, NULL),
+(14, 7, NULL, 'Моє тренування 23.06.2026', NULL, 14.4, 'intermediate', 'general', 0, 'completed', NULL, '2026-06-23 15:46:02', '2026-06-23 15:56:57', '2026-06-23 17:56:57', 0, NULL),
+(17, 8, NULL, 'Шаблон: 🏋️ Силова тренировка для початківців', NULL, 30.0, 'beginner', 'strength', 0, 'completed', NULL, '2026-06-23 17:38:25', '2026-06-23 17:38:29', '2026-06-23 19:38:29', 0, NULL);
 
 -- --------------------------------------------------------
 
@@ -928,6 +943,20 @@ ALTER TABLE `medical_restrictions`
   ADD UNIQUE KEY `name` (`name`);
 
 --
+-- Индексы таблицы `notifications`
+--
+ALTER TABLE `notifications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_notifications_user_read` (`user_id`,`is_read`,`created_at`);
+
+--
+-- Индексы таблицы `notification_templates`
+--
+ALTER TABLE `notification_templates`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `code` (`code`);
+
+--
 -- Индексы таблицы `plan_exercises`
 --
 ALTER TABLE `plan_exercises`
@@ -982,14 +1011,6 @@ ALTER TABLE `trainer_notification_settings`
   ADD PRIMARY KEY (`trainer_id`);
 
 --
--- Индексы таблицы `trainer_subscriptions`
---
-ALTER TABLE `trainer_subscriptions`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uniq_trainer_subscription` (`user_id`,`trainer_id`),
-  ADD KEY `idx_trainer_subscriptions_trainer` (`trainer_id`);
-
---
 -- Индексы таблицы `trainer_programs`
 --
 ALTER TABLE `trainer_programs`
@@ -1003,6 +1024,14 @@ ALTER TABLE `trainer_schedule`
   ADD PRIMARY KEY (`id`),
   ADD KEY `trainer_id` (`trainer_id`),
   ADD KEY `client_id` (`client_id`);
+
+--
+-- Индексы таблицы `trainer_subscriptions`
+--
+ALTER TABLE `trainer_subscriptions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_trainer_subscription` (`user_id`,`trainer_id`),
+  ADD KEY `idx_trainer_subscriptions_trainer` (`trainer_id`);
 
 --
 -- Индексы таблицы `users`
@@ -1105,13 +1134,13 @@ ALTER TABLE `achievements`
 -- AUTO_INCREMENT для таблицы `chats`
 --
 ALTER TABLE `chats`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT для таблицы `chat_messages`
 --
 ALTER TABLE `chat_messages`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT для таблицы `client_programs`
@@ -1144,16 +1173,28 @@ ALTER TABLE `medical_restrictions`
   MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
+-- AUTO_INCREMENT для таблицы `notifications`
+--
+ALTER TABLE `notifications`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT для таблицы `notification_templates`
+--
+ALTER TABLE `notification_templates`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
 -- AUTO_INCREMENT для таблицы `plan_exercises`
 --
 ALTER TABLE `plan_exercises`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=54;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=89;
 
 --
 -- AUTO_INCREMENT для таблицы `program_exercises`
 --
 ALTER TABLE `program_exercises`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- AUTO_INCREMENT для таблицы `program_likes`
@@ -1171,31 +1212,31 @@ ALTER TABLE `program_media`
 -- AUTO_INCREMENT для таблицы `template_exercises`
 --
 ALTER TABLE `template_exercises`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT для таблицы `trainer_subscriptions`
---
-ALTER TABLE `trainer_subscriptions`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT для таблицы `trainer_programs`
 --
 ALTER TABLE `trainer_programs`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT для таблицы `trainer_schedule`
 --
 ALTER TABLE `trainer_schedule`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT для таблицы `trainer_subscriptions`
+--
+ALTER TABLE `trainer_subscriptions`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT для таблицы `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT для таблицы `user_achievements`
@@ -1225,7 +1266,7 @@ ALTER TABLE `workout_notes`
 -- AUTO_INCREMENT для таблицы `workout_plans`
 --
 ALTER TABLE `workout_plans`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT для таблицы `workout_templates`
@@ -1319,13 +1360,6 @@ ALTER TABLE `trainer_notification_settings`
   ADD CONSTRAINT `trainer_notification_settings_ibfk_1` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 --
--- Ограничения внешнего ключа таблицы `trainer_subscriptions`
---
-ALTER TABLE `trainer_subscriptions`
-  ADD CONSTRAINT `trainer_subscriptions_trainer_fk` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `trainer_subscriptions_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
 -- Ограничения внешнего ключа таблицы `trainer_programs`
 --
 ALTER TABLE `trainer_programs`
@@ -1339,6 +1373,13 @@ ALTER TABLE `trainer_schedule`
   ADD CONSTRAINT `trainer_schedule_ibfk_2` FOREIGN KEY (`client_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 
 --
+-- Ограничения внешнего ключа таблицы `trainer_subscriptions`
+--
+ALTER TABLE `trainer_subscriptions`
+  ADD CONSTRAINT `trainer_subscriptions_trainer_fk` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `trainer_subscriptions_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
 -- Ограничения внешнего ключа таблицы `user_achievements`
 --
 ALTER TABLE `user_achievements`
@@ -1350,64 +1391,6 @@ ALTER TABLE `user_achievements`
 --
 ALTER TABLE `user_activity_data`
   ADD CONSTRAINT `user_activity_data_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Ограничения внешнего ключа таблицы `user_gamification_stats`
---
-ALTER TABLE `user_gamification_stats`
-  ADD CONSTRAINT `user_gamification_stats_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Ограничения внешнего ключа таблицы `user_google_fit_tokens`
---
-ALTER TABLE `user_google_fit_tokens`
-  ADD CONSTRAINT `user_google_fit_tokens_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Ограничения внешнего ключа таблицы `user_levels`
---
-ALTER TABLE `user_levels`
-  ADD CONSTRAINT `user_levels_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Ограничения внешнего ключа таблицы `user_profiles`
---
-ALTER TABLE `user_profiles`
-  ADD CONSTRAINT `user_profiles_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Ограничения внешнего ключа таблицы `user_restrictions`
---
-ALTER TABLE `user_restrictions`
-  ADD CONSTRAINT `user_restrictions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `user_restrictions_ibfk_2` FOREIGN KEY (`restriction_id`) REFERENCES `medical_restrictions` (`id`);
-
---
--- Ограничения внешнего ключа таблицы `workout_logs`
---
-ALTER TABLE `workout_logs`
-  ADD CONSTRAINT `workout_logs_ibfk_1` FOREIGN KEY (`workout_id`) REFERENCES `workout_plans` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `workout_logs_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Ограничения внешнего ключа таблицы `workout_notes`
---
-ALTER TABLE `workout_notes`
-  ADD CONSTRAINT `workout_notes_ibfk_1` FOREIGN KEY (`workout_id`) REFERENCES `workout_plans` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `workout_notes_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Ограничения внешнего ключа таблицы `workout_plans`
---
-ALTER TABLE `workout_plans`
-  ADD CONSTRAINT `workout_plans_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `workout_plans_ibfk_2` FOREIGN KEY (`trainer_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
-
---
--- Ограничения внешнего ключа таблицы `workout_templates`
---
-ALTER TABLE `workout_templates`
-  ADD CONSTRAINT `workout_templates_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

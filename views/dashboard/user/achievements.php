@@ -3,9 +3,23 @@ require_once 'config/database.php';
 require_once 'controllers/GamificationController.php';
 
 $userId = $_SESSION['user_id'];
+
 $gamification = new GamificationController($userId);
+
+/*
+Автоматическая синхронизация достижений
+после установки новой БД
+*/
+$gamification->syncAchievements();
+
 $achievements = $gamification->getUserAchievements();
+
 $stats = $gamification->getGamificationStats();
+
+$summary = $gamification->getAchievementSummary();
+
+$recent = $gamification->getRecentAchievements(5);
+
 $summary = $gamification->getAchievementSummary();
 $recent = $gamification->getRecentAchievements(5);
 
@@ -26,7 +40,6 @@ foreach ($achievements as $ach) {
     $grouped[$cat][] = $ach;
 }
 
-// Редкость
 $rarityLabels = [
     'common' => 'Звичайний',
     'uncommon' => 'Нечастий',
@@ -58,6 +71,11 @@ $rarityBg = [
             <i class="bi bi-trophy text-warning"></i> Досягнення
         </h1>
         <div class="d-flex gap-2">
+            <?php if ($role === 'admin'): ?>
+            <button class="btn btn-outline-primary btn-sm" onclick="syncAchievements()">
+                <i class="bi bi-arrow-repeat"></i> Синхронізувати
+            </button>
+            <?php endif; ?>
             <span class="badge bg-primary fs-6 px-3 py-2">
                 <i class="bi bi-coin"></i> <?php echo $stats['total_points']; ?> балів
             </span>
@@ -178,9 +196,9 @@ $rarityBg = [
                             <div class="achievement-card <?php echo $ach['is_completed'] ? 'completed' : 'locked'; ?> border-0 shadow-sm h-100">
                                 <div class="card-body text-center">
                                     <div class="achievement-icon mb-2" style="color: <?php echo $ach['is_completed'] ? $rarityColors[$ach['rarity']] : '#6C757D'; ?>;">
-                                        <i class="bi <?php echo $ach['icon']; ?> display-5"></i>
+                                        <i class="bi <?php echo $ach['icon'] ?? 'bi-trophy'; ?> display-5"></i>
                                     </div>
-                                    <div class="d-flex justify-content-center gap-1 mb-1">
+                                    <div class="d-flex justify-content-center gap-1 mb-1 flex-wrap">
                                         <span class="badge <?php echo $rarityBg[$ach['rarity']] ?? 'bg-secondary'; ?>">
                                             <?php echo $rarityLabels[$ach['rarity']] ?? 'Звичайний'; ?>
                                         </span>
@@ -226,6 +244,39 @@ $rarityBg = [
         <?php endif; ?>
     <?php endforeach; ?>
 </div>
+
+<script>
+function syncAchievements() {
+    const btn = document.querySelector('.btn-outline-primary');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Синхронізація...';
+    
+    fetch('/api/gamification.php?action=sync', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('✅ Досягнення синхронізовано!', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast('❌ ' + (data.error || 'Помилка синхронізації'), 'danger');
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('❌ Помилка з\'єднання', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    });
+}
+</script>
 
 <style>
 .achievement-card {

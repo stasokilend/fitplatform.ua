@@ -328,8 +328,6 @@ if ($action === 'get_notifications') {
     exit;
 }
 
-echo json_encode(['success' => false, 'error' => 'Невідома дія']);
-
 // --- ОБНОВЛЕНИЕ ПРОГРАММЫ ---
 if ($action === 'update_program') {
     $programId = (int)($_POST['program_id'] ?? 0);
@@ -400,8 +398,9 @@ if ($action === 'update_program') {
     
     echo json_encode(['success' => true]);
     exit;
+}
 
-    // --- ЗАПРОС ПРОГРАММЫ ---
+// --- ЗАПРОС ПРОГРАММЫ ---
 if ($action === 'request_program') {
     $programId = (int)($_POST['program_id'] ?? 0);
     
@@ -489,7 +488,7 @@ if ($action === 'handle_program_request') {
     }
     
     if ($status === 'approved') {
-        $stmt = $this->pdo->prepare("
+        $stmt = $pdo->prepare("
             UPDATE client_programs 
             SET status = 'active', start_date = CURDATE()
             WHERE id = ?
@@ -506,7 +505,7 @@ if ($action === 'handle_program_request') {
             ]);
         }
     } else {
-        $stmt = $this->pdo->prepare("
+        $stmt = $pdo->prepare("
             UPDATE client_programs 
             SET status = 'cancelled'
             WHERE id = ?
@@ -516,7 +515,6 @@ if ($action === 'handle_program_request') {
     
     echo json_encode(['success' => $success]);
     exit;
-}
 }
 
 // --- ДОБАВЛЕНИЕ ЗАНЯТИЯ В РАСПИСАНИЕ ---
@@ -623,4 +621,6 @@ if ($action === 'delete_schedule') {
     echo json_encode(['success' => $success]);
     exit;
 }
+
+echo json_encode(['success' => false, 'error' => 'Невідома дія']);
 ?>

@@ -125,7 +125,7 @@ if ($action === 'complete') {
         $gamification->updateStats($calories, $completed, true);
         
         // Создаем уведомление
-        require_once 'controllers/NotificationController.php';
+        require_once __DIR__ . '/../controllers/NotificationController.php';
         $notification = new NotificationController($userId);
         $workoutData = $workout->getWorkout($workoutId);
         $notification->createFromTemplate('workout_completed', [

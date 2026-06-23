@@ -343,14 +343,14 @@ $isCompleted = $workout['status'] === 'completed';
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-semibold">Прогрес</span>
-                        <span class="fw-bold text-primary"><?php echo $progress; ?>%</span>
+                        <span class="fw-bold text-primary" id="workoutProgressPercent"><?php echo $progress; ?>%</span>
                     </div>
                     <div class="progress" style="height: 12px;">
-                        <div class="progress-bar bg-primary" style="width: <?php echo $progress; ?>%; transition: width 0.5s;">
+                        <div class="progress-bar bg-primary" id="workoutProgressBar" style="width: <?php echo $progress; ?>%; transition: width 0.5s;">
                         </div>
                     </div>
                     <div class="d-flex justify-content-between mt-2">
-                        <span class="text-muted small">
+                        <span class="text-muted small" id="workoutProgressText">
                             <i class="bi bi-check-circle"></i> 
                             <?php echo $workout['completed_exercises']; ?>/<?php echo $workout['total_exercises']; ?> виконано
                         </span>
@@ -370,8 +370,8 @@ $isCompleted = $workout['status'] === 'completed';
                             <?php echo $isCompleted ? '✅ Завершено' : '⏳ В процесі'; ?>
                         </span>
                     </div>
-                    <?php if (!$isCompleted && $progress > 0): ?>
-                        <button class="btn btn-success mt-3" id="completeWorkoutBtn">
+                    <?php if (!$isCompleted): ?>
+                        <button class="btn btn-success mt-3 <?php echo $progress > 0 ? '' : 'd-none'; ?>" id="completeWorkoutBtn">
                             <i class="bi bi-check-circle"></i> Завершити тренування
                         </button>
                     <?php endif; ?>
@@ -547,16 +547,20 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function updateProgress(completed, total) {
-        const progress = Math.round((completed / total) * 100);
-        const progressBar = document.querySelector('.progress .progress-bar');
-        const progressText = document.querySelector('.progress + .d-flex .text-muted:first-child');
-        const percentText = document.querySelector('.progress + .d-flex .fw-bold');
+        const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+        const progressBar = document.getElementById('workoutProgressBar');
+        const progressText = document.getElementById('workoutProgressText');
+        const percentText = document.getElementById('workoutProgressPercent');
+        const completeBtn = document.getElementById('completeWorkoutBtn');
         
         if (progressBar) progressBar.style.width = progress + '%';
         if (progressText) {
             progressText.innerHTML = `<i class="bi bi-check-circle"></i> ${completed}/${total} виконано`;
         }
         if (percentText) percentText.textContent = progress + '%';
+        if (completeBtn) {
+            completeBtn.classList.toggle('d-none', completed <= 0);
+        }
     }
 
     // ===== ЗВУК =====

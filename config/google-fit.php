@@ -1,8 +1,17 @@
 <?php
+require_once __DIR__ . '/Env.php';
+require_once __DIR__ . '/../includes/functions.php';
 
-define('GOOGLE_FIT_CLIENT_ID', '1097198779936-5lsqnde1ge5dvohie2eavj6irl461pbd.apps.googleusercontent.com');
-define('GOOGLE_FIT_CLIENT_SECRET', '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');
-define('GOOGLE_FIT_REDIRECT_URI', 'http://127.0.1.31/google-fit-callback.php');
+Env::load();
+
+$googleFitRedirectUri = (string) Env::get('GOOGLE_FIT_REDIRECT_URI', '');
+if ($googleFitRedirectUri === '') {
+    $googleFitRedirectUri = url('/google-fit-callback.php');
+}
+
+define('GOOGLE_FIT_CLIENT_ID', (string) Env::get('GOOGLE_FIT_CLIENT_ID', ''));
+define('GOOGLE_FIT_CLIENT_SECRET', (string) Env::get('GOOGLE_FIT_CLIENT_SECRET', ''));
+define('GOOGLE_FIT_REDIRECT_URI', $googleFitRedirectUri);
 
 define('GOOGLE_FIT_SCOPES', implode(' ', [
     'https://www.googleapis.com/auth/fitness.activity.read',
